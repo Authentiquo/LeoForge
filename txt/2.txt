@@ -1,0 +1,109 @@
+```md
+# ÉVALUATION DE MON TRAVAIL
+
+## Titre et Description du Projet
+**ARC21 Token avec Mint Payant**
+- Token suivant le standard ARC21 communautaire
+- Système de mint avec paiement en Aleo Credits vers un treasury
+- Gestion d'admin et restriction par block height
+
+## Origine des Erreurs : PROMPT INSTRUCT + MAUVAISE INTERPRÉTATION
+- **75% PROMPT INSTRUCT** : Mauvaise compréhension des règles Leo async
+- **25% CHEATSHEET** : Mauvaise lecture des exemples d'import
+
+## Erreurs Commises et Leurs Solutions
+
+### 1. **ERREUR MAJEURE : Règles Async mal comprises**
+```leo
+// MON CODE INCORRECT
+async transition register_with_registry() -> Future {
+    let register_future: Future = token_registry.aleo/register_token(...);
+    return finalize_register_with_registry(register_future); // INUTILE
+}
+
+// CORRECTION SIMPLE
+async transition initialize() -> Future {
+    let register_future: Future = token_registry.aleo/register_token(...);
+    return finalize_initialize(register_future); // DIRECT
+}
+```
+
+### 2. **ERREUR : Complexité inutile avec mappings**
+```leo
+// MON CODE INCORRECT
+mapping is_initialized: bool => bool; // INUTILE
+// + functions séparées pour initialize/register
+
+// CORRECTION
+// Pas de mapping local, juste appel direct au registry
+```
+
+### 3. **ERREUR : Mauvaise gestion des paiements**
+```leo
+// MON CODE INCORRECT
+credits.aleo/transfer_private(credits_record, TREASURY, amount)
+
+// CORRECTION
+credits.aleo/transfer_public_as_signer(TREASURY, payment_amount)
+```
+
+### 4. **ERREUR : Import inutile**
+```leo
+// MON CODE INCORRECT
+import credits.aleo; // PAS NÉCESSAIRE
+
+// CORRECTION
+// Pas d'import credits, utilisation directe
+```
+
+## Conseils pour Améliorer
+1. **SIMPLICITÉ D'ABORD** : Toujours chercher la solution la plus simple
+2. **LIRE LES SPECS** : Mieux analyser les signatures des fonctions externes
+3. **TESTER PROGRESSIVEMENT** : Construire step by step
+4. **ÉVITER LA SURENGINEERING** : Pas de features non demandées
+
+## Composability / Import = FALSE
+- Import credits.aleo était inutile
+- Structure trop complexe nuit à la composabilité
+- La correction montre qu'on peut utiliser credits.aleo sans l'importer
+
+## Code Snippet Clé
+```leo
+// PATTERN CORRECT pour async avec fonctions externes
+async transition mint(amount: u128) -> Future {
+    let payment_future: Future = credits.aleo/transfer_public_as_signer(...);
+    let mint_future: Future = token_registry.aleo/mint_public(...);
+    return finalize_mint(amount, payment_future, mint_future);
+}
+
+async function finalize_mint(amount: u128, payment_future: Future, mint_future: Future) {
+    assert(block.height >= MINT_START_HEIGHT);
+    payment_future.await();
+    mint_future.await();
+}
+```
+
+## Règles d'Or pour Éviter les Erreurs
+1. **Les async transitions PEUVENT retourner directement des Futures externes**
+2. **Composer plusieurs Futures dans une async function avec .await()**
+3. **Ne pas importer ce qui n'est pas nécessaire**
+4. **Utiliser transfer_public_as_signer pour les paiements publics**
+5. **Garder la logique simple et directe**
+
+## Checklist pour Éviter les Erreurs
+- [ ] Vérifier les signatures exactes des fonctions externes
+- [ ] Minimiser les imports aux stricts nécessaires  
+- [ ] Utiliser block.height pour les vérifications temporelles
+- [ ] Composer les Futures au lieu de les imbriquer
+- [ ] Éviter les mappings locaux si non nécessaires
+- [ ] Tester chaque fonction individuellement
+- [ ] Lire la documentation des standards (ARC21)
+
+## Note : 4/10
+- **Fonctionnalité** : 6/10 (marche mais trop complexe)
+- **Simplicité** : 2/10 (over-engineered)
+- **Conformité Leo** : 3/10 (mauvaise compréhension async)
+- **Best Practices** : 4/10 (imports inutiles, structure lourde)
+
+**Leçon principale** : La simplicité et la lecture attentive des specs sont cruciales en Leo.
+```

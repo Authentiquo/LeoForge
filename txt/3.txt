@@ -1,0 +1,307 @@
+```markdown
+# ÉVALUATION DU PROJET - ORDER BOOK DEX
+
+## -> Titre et description du projet
+**Privacy-Preserving Order Book DEX**
+Système d'échange décentralisé avec carnet d'ordres préservant la confidentialité, permettant la création, l'acceptation, la suppression et le retrait d'ordres de trading entre tokens.
+
+## -> L'origine des erreurs : PROMPT INSTRUCT
+Les erreurs proviennent principalement de l'instruction du prompt qui m'a guidé vers une approche autonome sans considérer l'utilisation d'un système de tokens externes existant.
+
+## -> Les erreurs commises et leurs solutions
+
+### ERREUR 1: Absence d'import et de composabilité
+**Problème**: J'ai créé mes propres types `Token` au lieu d'utiliser `token_registry.aleo`
+**Solution**: 
+```leo
+import token_registry.aleo;
+// Utiliser token_registry.aleo/Token au lieu de créer un type custom
+```
+
+### ERREUR 2: Gestion manuelle des transferts
+**Problème**: J'ai tenté de gérer les transferts avec des mappings `token_balances`
+**Solution**: Utiliser les fonctions du token_registry:
+```leo
+token_registry.aleo/transfer_private_to_public()
+token_registry.aleo/transfer_public_to_private()
+```
+
+### ERREUR 3: Mauvaise utilisation du modèle async
+**Problème**: J'ai utilisé le nouveau modèle async alors que le token_registry utilise finalize
+**Solution**: 
+```leo
+async function finalize_create_order(...) {
+    transfer_future.await();
+}
+```
+
+### ERREUR 4: Paramètres manquants dans les transitions
+**Problème**: Je n'ai pas passé explicitement les montants et IDs comme paramètres
+**Solution**:
+```leo
+async transition create_order(
+    public order_id: field,
+    public sold_token_amount: u128,
+    public bought_token_amount: u128
+    // ...
+)
+```
+
+### ERREUR 5: Utilisation de self.caller au lieu de self.signer
+**Problème**: Mauvaise référence pour l'ownership
+**Solution**: Utiliser `self.signer` pour l'ownership des receipts
+
+## -> ADVICE POUR AMÉLIORER
+
+1. **Étudier l'écosystème existant** avant de réimplémenter des fonctionnalités
+2. **Comprendre les patterns de composabilité** Leo/Aleo
+3. **Maîtriser la différence entre async et finalize**
+4. **Toujours vérifier les imports disponibles** dans l'environnement de développement
+5. **Lire attentivement les spécifications** du projet avant de commencer
+
+## -> Composability / import = True
+La solution correcte utilise l'import `token_registry.aleo` démontrant une parfaite composabilité.
+
+## -> Code snippet (correction clé)
+```leo
+import token_registry.aleo;
+
+async transition create_order(
+    public order_id: field,
+    private sold_token: token_registry.aleo/Token,
+    public bought_token_id: field,
+    public sold_token_amount: u128,
+    public bought_token_amount: u128
+) -> (Receipt, token_registry.aleo/Token, Future) {
+    let (change, transfer_future) = token_registry.aleo/transfer_private_to_public(
+        self.address,
+        sold_token_amount,
+        sold_token
+    );
+    // ...
+}
+```
+
+## -> Règles d'or pour éviter les erreurs
+
+1. **ALWAYS CHECK IMPORTS FIRST** - Vérifier les programmes disponibles
+2. **UNDERSTAND THE TOKEN MODEL** - Comprendre comment les tokens fonctionnent
+3. **RESPECT EXISTING PATTERNS** - Ne pas réinventer la roue
+4. **READ SPECIFICATIONS CAREFULLY** - Lire attentivement les spécifications
+5. **TEST COMPOSABILITY EARLY** - Tester l'intégration dès le début
+
+## -> Check list pour éviter les erreurs
+
+- [ ] Vérifier les imports disponibles dans l'environnement
+- [ ] Comprendre le modèle de token utilisé (external vs custom)
+- [ ] Identifier les patterns async vs finalize requis
+- [ ] Valider la signature des fonctions externes
+- [ ] Tester la composabilité avec les programmes importés
+- [ ] Vérifier l'utilisation correcte de self.signer vs self.caller
+- [ ] S'assurer que tous les Futures sont correctement awaités
+- [ ] Valider la logique métier avant l'implémentation technique
+
+## -> Note: 6/10
+
+**Points positifs:**
+- Structure générale correcte
+- Logique de sécurité appropriée
+- Bonne compréhension des concepts de privacy
+
+**Points à améliorer:**
+- Composabilité manquée (-2)
+- Gestion des transferts incorrecte (-1)
+- Modèle async/finalize mal appliqué (-1)
+
+**Recommandation:** Approfondir la compréhension de l'écosystème Leo/Aleo et des patterns de composabilité.
+```
+--- 
+```markdown
+# RÈGLES D'IMPORT POUR AGENT IA - LEO/ALEO
+
+## CATÉGORIES D'IMPORTS STANDARDS
+
+### 1. TOKEN MANAGEMENT
+```leo
+import token_registry.aleo;
+```
+**QUAND UTILISER:**
+- Projet implique des tokens ERC-20-like
+- Besoin de mint/burn/transfer de tokens
+- Gestion de balances privées/publiques
+- Multi-token applications (DEX, marketplace, etc.)
+
+**FONCTIONS DISPONIBLES:**
+- `transfer_private_to_public()`
+- `transfer_public_to_private()`
+- `transfer_private()`
+- `transfer_public()`
+
+### 2. CREDITS NATIFS
+```leo
+import credits.aleo;
+```
+**QUAND UTILISER:**
+- Paiements en crédits Aleo natifs
+- Fees et commissions
+- Staking/rewards en crédits
+- Applications financières nécessitant la monnaie native
+
+**FONCTIONS DISPONIBLES:**
+- `transfer_private_to_public()`
+- `transfer_public_to_private()`
+- `transfer_private()`
+- `transfer_public()`
+
+## RÈGLES DE DÉCISION AUTOMATIQUE
+
+### RÈGLE 1: DÉTECTION DE MOTS-CLÉS
+```yaml
+SI le projet contient:
+  - "token", "ERC20", "mint", "burn" -> AJOUTER token_registry.aleo
+  - "credit", "fee", "payment", "native" -> AJOUTER credits.aleo
+  - "DEX", "exchange", "swap" -> AJOUTER token_registry.aleo
+  - "marketplace", "NFT" -> AJOUTER token_registry.aleo
+  - "staking", "reward" -> AJOUTER credits.aleo ET token_registry.aleo
+```
+
+### RÈGLE 2: ANALYSE DE STRUCTURE
+```yaml
+SI le code contient:
+  - record Token { } -> REMPLACER par import token_registry.aleo
+  - record Credit { } -> REMPLACER par import credits.aleo
+  - mapping balances: address => u64 -> CONSIDÉRER token_registry.aleo
+  - transition transfer() -> CONSIDÉRER les imports appropriés
+```
+
+### RÈGLE 3: ANALYSE DE TRANSITIONS
+```yaml
+SI les transitions incluent:
+  - create_order + accept_order -> token_registry.aleo OBLIGATOIRE
+  - deposit + withdraw -> credits.aleo PROBABLE
+  - mint + burn -> token_registry.aleo OBLIGATOIRE
+  - stake + unstake -> credits.aleo + token_registry.aleo
+```
+
+## PATTERNS DE REMPLACEMENT AUTOMATIQUE
+
+### PATTERN 1: Custom Token -> Standard Token
+```leo
+// AVANT (incorrect)
+record Token {
+    owner: address,
+    amount: u64,
+}
+
+// APRÈS (correct)
+import token_registry.aleo;
+// Utiliser token_registry.aleo/Token
+```
+
+### PATTERN 2: Manual Transfers -> Standard Functions
+```leo
+// AVANT (incorrect)
+transition transfer(amount: u64) {
+    // logique manuelle
+}
+
+// APRÈS (correct)
+import token_registry.aleo;
+let (result, future) = token_registry.aleo/transfer_private(...);
+```
+
+## MATRICE DE DÉCISION
+
+| Type de Projet | token_registry.aleo | credits.aleo | Autres |
+|----------------|---------------------|--------------|--------|
+| DEX/Exchange | ✅ OBLIGATOIRE | ⚠️ OPTIONNEL | - |
+| Token Simple | ✅ OBLIGATOIRE | ❌ NON | - |
+| Payment App | ⚠️ OPTIONNEL | ✅ OBLIGATOIRE | - |
+| Staking/DeFi | ✅ OBLIGATOIRE | ✅ OBLIGATOIRE | - |
+| Marketplace | ✅ OBLIGATOIRE | ⚠️ OPTIONNEL | - |
+| Gaming | ✅ PROBABLE | ✅ PROBABLE | - |
+
+## ALGORITHME DE DÉCISION POUR IA
+
+```python
+def determine_imports(project_description, code_content):
+    imports = []
+    
+    # Analyse des mots-clés
+    token_keywords = ["token", "mint", "burn", "ERC20", "DEX", "exchange", "marketplace"]
+    credit_keywords = ["credit", "fee", "payment", "native", "stake", "reward"]
+    
+    # Analyse du contenu
+    if any(keyword in project_description.lower() for keyword in token_keywords):
+        imports.append("token_registry.aleo")
+    
+    if any(keyword in project_description.lower() for keyword in credit_keywords):
+        imports.append("credits.aleo")
+    
+    # Analyse du code existant
+    if "record Token" in code_content or "record token" in code_content:
+        imports.append("token_registry.aleo")
+        # Flaguer pour remplacement
+    
+    if "transfer(" in code_content and "token_registry.aleo" not in imports:
+        imports.append("token_registry.aleo")
+    
+    return imports
+```
+
+## EXCEPTIONS ET CAS SPÉCIAUX
+
+### CAS 1: Projets éducatifs/simples
+```yaml
+SI description contient "simple", "tutorial", "basic":
+  -> NE PAS auto-importer
+  -> Laisser l'utilisateur décider
+```
+
+### CAS 2: Projets avec custom logic
+```yaml
+SI code contient "custom" ou "specific":
+  -> SUGGÉRER imports mais ne pas forcer
+  -> Alerter sur les alternatives
+```
+
+## MESSAGES D'AIDE AUTOMATIQUES
+
+```leo
+// L'IA doit générer ces commentaires quand elle détecte le besoin d'imports
+
+// DÉTECTÉ: Ce projet semble nécessiter la gestion de tokens
+// SUGGESTION: import token_registry.aleo;
+// RAISON: Présence de logique de transfert de tokens
+
+// DÉTECTÉ: Ce projet semble nécessiter des crédits natifs
+// SUGGESTION: import credits.aleo;
+// RAISON: Mentions de payments et fees
+```
+
+## VALIDATION POST-IMPORT
+
+```yaml
+APRÈS ajout d'imports, VÉRIFIER:
+  - Toutes les fonctions externes sont correctement appelées
+  - Les types sont cohérents (token_registry.aleo/Token)
+  - Les Futures sont correctement gérés
+  - Les paramètres correspondent aux signatures
+```
+
+## RÈGLES DE PRIORITÉ
+
+1. **SÉCURITÉ FIRST**: Toujours préférer les imports standards
+2. **COMPOSABILITÉ**: Favoriser l'interopérabilité
+3. **PERFORMANCE**: Éviter les imports inutiles
+4. **CLARTÉ**: Documenter pourquoi chaque import est nécessaire
+
+## CHECK-LIST FINALE POUR L'IA
+
+- [ ] Analyser le contexte du projet
+- [ ] Identifier les patterns de code
+- [ ] Appliquer les règles de décision
+- [ ] Vérifier la cohérence des imports
+- [ ] Générer des commentaires explicatifs
+- [ ] Valider la compilation théorique
+```
