@@ -1,70 +1,257 @@
-# LeoForge
+# 🔥 LeoForge
 
-LeoForge is an AI-powered workflow that generates Leo code for the Aleo blockchain using OpenAI's Agents SDK.
+<div align="center">
 
-## Features
+![LeoForge](https://img.shields.io/badge/LeoForge-v1.0.0-blue)
+![Python](https://img.shields.io/badge/Python-3.8+-green)
+![Leo](https://img.shields.io/badge/Leo-Compatible-orange)
+![License](https://img.shields.io/badge/License-MIT-purple)
 
-- Built with OpenAI's Agents SDK for advanced agentic capabilities
-- Specialized multi-agent architecture with handoffs between expert agents
-- Built-in function tools for Leo project operations
-- AI-assisted generation of Leo smart contracts
-- Interactive workflow with human-in-the-loop validation
-- LLM evaluation of generated code
-- Support for multi-component contract composition
-- Easy project building and deployment
-- Comprehensive Leo cheatsheet with async programming examples
-- Modern async/await programming model implementation
+**AI-Powered Leo Smart Contract Generator for Aleo Blockchain**
 
-## Architecture
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Architecture](#architecture) • [Examples](#examples)
 
-LeoForge uses a multi-agent architecture powered by the OpenAI Agents SDK:
+</div>
 
-1. **Architect Agent**: Analyzes requirements and designs component structures
-2. **Generator Agent**: Creates Leo code based on specifications
-3. **Evaluator Agent**: Checks code quality and provides feedback
-4. **Builder Agent**: Handles project creation and compilation
+---
 
-Agents work together through handoffs, allowing them to delegate tasks to each other based on their specializations.
+## 🌟 Overview
 
-## Setup
+LeoForge is an advanced AI-powered code generation framework specifically designed for creating Leo smart contracts on the Aleo blockchain. It leverages multiple AI agents working in concert to analyze requirements, generate code, evaluate quality, and iteratively improve until a compilable, production-ready smart contract is produced.
+
+## ✨ Features
+
+- **🤖 Multi-Agent Architecture**: Specialized AI agents for different aspects of code generation
+  - **Architect Agent**: Analyzes requirements and designs project architecture
+  - **Code Generator Agent**: Generates Leo code based on specifications
+  - **Code Evaluator Agent**: Reviews code for completeness, security, and optimization
+  
+- **🔄 Iterative Improvement**: Automatic compilation, error detection, and correction loop
+- **🎨 Rich Console Interface**: Beautiful CLI with progress tracking and formatted output
+- **📊 Comprehensive Feedback**: Detailed evaluation scores and improvement suggestions
+- **🚀 Project Templates**: Support for various project types (Token, NFT, DeFi, Games, etc.)
+- **🛡️ Security Focus**: Built-in security analysis and best practices enforcement
+
+## 📋 Requirements
+
+- Python 3.8 or higher
+- Leo CLI (for compilation)
+- API key for AI model access (Claude/OpenAI)
+
+## 🚀 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/LeoForge.git
+   cd LeoForge
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   ```bash
+   export ANTHROPIC_API_KEY="your-api-key"
+   # or
+   export OPENAI_API_KEY="your-api-key"
+   ```
+
+## 📖 Usage
+
+### Interactive Mode (Recommended)
+
+Simply run LeoForge without arguments for an interactive experience:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Add your OpenAI API key and other configuration in .env
+python main.py generate
 ```
 
-## Usage
+### Command Line Mode
+
+Generate a project with a single command:
 
 ```bash
-python leoforge.py
+# Generate a token project
+python main.py generate "Create an ERC20-like token with mint, burn, and transfer functions" --type token
+
+# Generate with custom iterations
+python main.py generate "Build a DAO voting system" --iterations 3
+
+# Non-interactive mode
+python main.py generate "Create a lottery contract" --no-interactive
 ```
 
-Follow the interactive prompts to generate Leo code based on your specifications.
+### Available Commands
 
-### Advanced Configuration
+- `generate` - Generate a new Leo project
+- `examples` - Show example project queries
+- `version` - Display version information
 
-Enable tracing for debugging by setting:
+### Command Options
+
+- `--type, -t` - Specify project type (token, nft, defi, game, oracle, custom)
+- `--iterations, -i` - Maximum generation iterations (default: 5)
+- `--interactive/--no-interactive` - Toggle interactive mode
+
+## 🏗️ Architecture
+
+### Workflow Overview
+
+```mermaid
+graph TD
+    A[User Query] --> B[Architect Agent]
+    B --> C[Architecture Design]
+    C --> D[Code Requirements]
+    D --> E[Code Generator Agent]
+    E --> F[Generated Code]
+    F --> G[Code Evaluator Agent]
+    G --> H{Evaluation}
+    H -->|Good Quality| I[Leo Builder]
+    H -->|Needs Improvement| E
+    I --> J{Build Success?}
+    J -->|Yes| K[Success]
+    J -->|No| L[Error Analysis]
+    L --> E
+```
+
+### Agent Responsibilities
+
+1. **Architect Agent**
+   - Analyzes natural language requirements
+   - Identifies project type and features
+   - Designs data structures and functions
+   - Considers security implications
+
+2. **Code Generator Agent**
+   - Transforms requirements into Leo code
+   - Implements all specified features
+   - Follows Leo syntax and best practices
+   - Handles compilation error fixes
+
+3. **Code Evaluator Agent**
+   - Assesses code completeness
+   - Identifies security vulnerabilities
+   - Suggests optimizations
+   - Provides quality score (0-100)
+
+### Project Structure
 
 ```
-ENABLE_TRACING=true
+LeoForge/
+├── src/
+│   ├── agents/          # AI agents
+│   │   ├── architect.py
+│   │   ├── code_generator.py
+│   │   └── code_evaluator.py
+│   ├── services/        # Core services
+│   │   └── builder.py
+│   ├── workflow/        # Orchestration
+│   │   └── orchestrator.py
+│   ├── models.py        # Data models
+│   └── cli.py          # CLI interface
+├── main.py             # Entry point
+├── requirements.txt
+└── README.md
 ```
 
-in your .env file to visualize agent interactions and workflow.
+## 📚 Examples
 
-## Leo Programming Resources
+### Token Project
+```bash
+python main.py generate "Create a governance token with voting power, delegation, and time-locked vesting"
+```
 
-The repository includes comprehensive resources for Leo programming:
+### NFT Collection
+```bash
+python main.py generate "Build an NFT marketplace with minting, royalties, and auction functionality" --type nft
+```
 
-- **System Prompt**: A detailed prompt that guides the AI in generating proper Leo code
-- **Leo Cheatsheet**: A complete reference for Leo syntax, including:
-  - Basic data types and structures
-  - Transitions and functions
-  - Async programming model with Futures
-  - Mapping operations for on-chain storage
-  - Best practices and common pitfalls
+### DeFi Protocol
+```bash
+python main.py generate "Implement a lending protocol with collateral, liquidation, and interest rates" --type defi
+```
 
-These resources are continuously updated to reflect the latest changes in the Leo language and Aleo blockchain. 
+### Gaming Contract
+```bash
+python main.py generate "Create a battle royale game with player stats, loot boxes, and tournaments" --type game
+```
+
+## 🎯 Output Example
+
+```
+🚀 LeoForge Project Generation
+Query: Create a simple token with mint and transfer functions
+
+🏗️  Designing architecture...
+✓ Architecture design complete
+
+╭─ Project Architecture ──────────────────────────────────────╮
+│ Component         Details                                   │
+├─────────────────────────────────────────────────────────────┤
+│ Project Name      simple_token                              │
+│ Type              token                                     │
+│ Features          • Mint new tokens                         │
+│                   • Transfer tokens between addresses       │
+│                   • Check balance                           │
+│                   • Burn tokens                             │
+│ Data Structures   • Token: record with owner and amount     │
+│ Transitions       • mint: (address, u64) -> Token           │
+│                   • transfer: (Token, address, u64) -> Token│
+╰─────────────────────────────────────────────────────────────╯
+
+✓ Workspace created: /home/user/simple_token
+
+🔄 Iteration 1/5
+  Generating initial code...
+  Evaluating code quality...
+  Building project...
+
+╭─ Iteration 1 Results ───────────────────────────────────────╮
+│ Metric              Value                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Code Quality Score  92.5/100                                 │
+│ Complete            ✓                                        │
+│ Has Errors          ✓                                        │
+│ Build Status        success                                  │
+│ Build Time          2.34s                                    │
+│ Duration            8.67s                                    │
+╰─────────────────────────────────────────────────────────────╯
+
+🎉 Success! Project built successfully in 1 iteration(s)
+
+✨ Project Generation Complete! ✨
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Aleo team for the Leo programming language
+- Anthropic/OpenAI for AI models
+- Rich library for the beautiful console interface
+
+---
+
+<div align="center">
+Made with ❤️ for the Aleo ecosystem
+</div> 
