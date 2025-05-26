@@ -32,8 +32,8 @@ class ArchitectureDesign(BaseModel):
     description: str
     features: List[str]
     technical_requirements: List[str]
-    data_structures: Dict[str, str] = Field(default_factory=dict, description="Record/struct definitions")
-    transitions: Dict[str, str] = Field(default_factory=dict, description="Function signatures")
+    data_structures: Dict[str, Any] = Field(default_factory=dict, description="Record/struct definitions")
+    transitions: Dict[str, Any] = Field(default_factory=dict, description="Function signatures")
     security_considerations: List[str] = Field(default_factory=list)
 
 

@@ -12,11 +12,11 @@ from rich.syntax import Syntax
 
 from src.models import (
     UserQuery, CodeRequirements, ProjectResult, 
-    IterationResult, GeneratedCode, CompilationStatus
+    IterationResult
 )
-from src.agents.architect import ArchitectAgent
-from src.agents.code_generator import CodeGeneratorAgent
-from src.agents.code_evaluator import CodeEvaluatorAgent
+from src.leoagents.architect import ArchitectAgent
+from src.leoagents.code_generator import CodeGeneratorAgent
+from src.leoagents.code_evaluator import CodeEvaluatorAgent
 from src.services.builder import WorkspaceManager, LeoBuilder
 
 
