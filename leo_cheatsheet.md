@@ -579,7 +579,7 @@ program token.aleo {
         public total_supply: u64
     ) -> (Token, Future) {
         let token: Token = Token {
-            owner: self.caller,
+            owner: self.signer,
             amount: total_supply,
         };
         
@@ -608,7 +608,7 @@ program token.aleo {
         to: address,
         amount: u64
     ) -> (Token, Token) {
-        assert_eq(token.owner, self.caller);
+        assert_eq(token.owner, self.signer);
         assert(amount <= token.amount);
         
         let recipient_token: Token = Token {
@@ -617,7 +617,7 @@ program token.aleo {
         };
         
         let sender_token: Token = Token {
-            owner: self.caller,
+            owner: self.signer,
             amount: token.amount - amount,
         };
         
@@ -794,7 +794,7 @@ transition create_escrow(
     lock_duration: u32
 ) -> EscrowDeposit {
     return EscrowDeposit {
-        depositor: self.caller,
+        depositor: self.signer,
         beneficiary,
         amount,
         release_height: 0u32, // Set in finalize
@@ -867,26 +867,26 @@ async function finalize_propose(proposer: address, target: address, amount: u64)
 ```leo
 // Basic assertions
 assert(amount > 0u64);
-assert_eq(token.owner, self.caller);
-assert_neq(recipient, self.caller);
+assert_eq(token.owner, self.signer);
+assert_neq(recipient, self.signer);
 
 // Custom error messages (via comments)
 assert(amount > 0u64); // Amount must be positive
-assert_eq(token.owner, self.caller); // Only token owner can transfer
+assert_eq(token.owner, self.signer); // Only token owner can transfer
 ```
 
 ### Input Validation
 ```leo
 transition transfer(token: Token, to: address, amount: u64) -> (Token, Token) {
     // Validate ownership
-    assert_eq(token.owner, self.caller);
+    assert_eq(token.owner, self.signer);
     
     // Validate amount
     assert(amount > 0u64);
     assert(amount <= token.amount);
     
     // Validate recipient
-    assert_neq(to, self.caller); // Can't transfer to self
+    assert_neq(to, self.signer); // Can't transfer to self
     
     // Transfer logic...
 }
@@ -1131,13 +1131,13 @@ program my_program.aleo {
 ```leo
 // ✅ Always validate inputs
 assert(amount > 0u64);
-assert_eq(token.owner, self.caller);
+assert_eq(token.owner, self.signer);
 
 // ✅ Check for overflows
 assert(balance + amount >= balance);
 
 // ✅ Validate addresses
-assert_neq(to, self.caller);
+assert_neq(to, self.signer);
 
 // ✅ Use proper access control
 assert_eq(self.caller, OWNER);
@@ -1183,13 +1183,13 @@ transition batch_mint(recipients: [address; 5], amounts: [u64; 5]) -> [Token; 5]
 ```leo
 // ❌ Don't forget to validate ownership
 transition bad_transfer(token: Token, to: address) -> Token {
-    // Missing: assert_eq(token.owner, self.caller);
+    // Missing: assert_eq(token.owner, self.signer);
     return Token { owner: to, amount: token.amount };
 }
 
 // ✅ Always validate ownership
 transition good_transfer(token: Token, to: address) -> Token {
-    assert_eq(token.owner, self.caller);
+    assert_eq(token.owner, self.signer);
     return Token { owner: to, amount: token.amount };
 }
 

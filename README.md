@@ -140,7 +140,7 @@ graph TD
    - Assesses code completeness
    - Identifies security vulnerabilities
    - Suggests optimizations
-   - Provides quality score (0-100)
+   - Provides quality score (1-10)
 
 ### Project Structure
 
@@ -207,7 +207,7 @@ Query: Create a simple token with mint and transfer functions
 │                   • transfer: (Token, address, u64) -> Token│
 ╰─────────────────────────────────────────────────────────────╯
 
-✓ Workspace created: /home/user/simple_token
+✓ Workspace created: /home/user/output/simple_token
 
 🔄 Iteration 1/5
   Generating initial code...
@@ -217,7 +217,7 @@ Query: Create a simple token with mint and transfer functions
 ╭─ Iteration 1 Results ───────────────────────────────────────╮
 │ Metric              Value                                    │
 ├─────────────────────────────────────────────────────────────┤
-│ Code Quality Score  92.5/100                                 │
+│ Code Quality Score  9.2/10                                  │
 │ Complete            ✓                                        │
 │ Has Errors          ✓                                        │
 │ Build Status        success                                  │

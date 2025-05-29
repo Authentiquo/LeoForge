@@ -11,22 +11,36 @@ from src.models import BuildResult, CompilationStatus, GeneratedCode
 class WorkspaceManager:
     """Manages Leo project workspaces"""
     
+    # Dossier de base pour tous les workspaces
+    OUTPUT_DIR = "output"
+    
+    @staticmethod
+    def _get_workspace_path(project_name: str) -> Path:
+        """Get the full workspace path for a project"""
+        output_dir = Path(WorkspaceManager.OUTPUT_DIR)
+        output_dir.mkdir(exist_ok=True)  # Créer le dossier output s'il n'existe pas
+        return output_dir / project_name
+    
     @staticmethod
     def create_workspace(project_name: str) -> tuple[bool, str]:
-        """Create a new Leo workspace"""
-        workspace_path = Path(project_name).resolve()
+        """Create a new Leo workspace in the output directory"""
+        workspace_path = WorkspaceManager._get_workspace_path(project_name)
         
         if workspace_path.exists():
-            return True, str(workspace_path)
+            return True, str(workspace_path.resolve())
         
         try:
+            # Créer le dossier output s'il n'existe pas
+            workspace_path.parent.mkdir(exist_ok=True)
+            
             result = subprocess.run(
                 ["leo", "new", project_name],
+                cwd=workspace_path.parent,  # Exécuter dans le dossier output
                 capture_output=True,
                 text=True,
                 check=True
             )
-            return True, str(workspace_path)
+            return True, str(workspace_path.resolve())
         except subprocess.CalledProcessError as e:
             return False, f"Failed to create workspace: {e.stderr}"
         except FileNotFoundError:
@@ -36,7 +50,8 @@ class WorkspaceManager:
     def save_code(project_name: str, code: str) -> bool:
         """Save code to workspace main.leo file"""
         try:
-            file_path = Path(project_name) / "src" / "main.leo"
+            workspace_path = WorkspaceManager._get_workspace_path(project_name)
+            file_path = workspace_path / "src" / "main.leo"
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(code, encoding="utf-8")
             return True
@@ -47,7 +62,8 @@ class WorkspaceManager:
     def read_code(project_name: str, file_path: str = "src/main.leo") -> Optional[str]:
         """Read code from workspace"""
         try:
-            full_path = Path(project_name) / file_path
+            workspace_path = WorkspaceManager._get_workspace_path(project_name)
+            full_path = workspace_path / file_path
             if full_path.exists():
                 return full_path.read_text(encoding="utf-8")
             return None
@@ -58,7 +74,8 @@ class WorkspaceManager:
     def clean_workspace(project_name: str) -> bool:
         """Clean build artifacts from workspace"""
         try:
-            build_dir = Path(project_name) / "build"
+            workspace_path = WorkspaceManager._get_workspace_path(project_name)
+            build_dir = workspace_path / "build"
             if build_dir.exists():
                 import shutil
                 shutil.rmtree(build_dir)
@@ -76,9 +93,11 @@ class LeoBuilder:
         start_time = time.time()
         
         try:
+            workspace_path = WorkspaceManager._get_workspace_path(project_name)
+            
             result = subprocess.run(
                 ["leo", "build"],
-                cwd=Path(project_name),
+                cwd=workspace_path,
                 capture_output=True,
                 text=True,
                 timeout=timeout
@@ -99,7 +118,7 @@ class LeoBuilder:
             
             if result.returncode == 0:
                 # Check for output files
-                build_dir = Path(project_name) / "build"
+                build_dir = workspace_path / "build"
                 output_files = []
                 if build_dir.exists():
                     output_files = [str(f.relative_to(build_dir)) 

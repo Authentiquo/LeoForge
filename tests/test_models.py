@@ -40,15 +40,18 @@ def test_architecture_design():
         description="A simple token implementation",
         features=["mint", "transfer", "burn"],
         technical_requirements=["ERC20 compatible"],
-        data_structures={"Token": "record with owner and amount"},
-        transitions={"mint": "(address, u64) -> Token"},
-        security_considerations=["Check for overflow"]
+        data_structures=["Token: record with owner and amount"],
+        transitions=["mint: (address, u64) -> Token"],
+        security_considerations=["Check for overflow"],
+        admin_features=["Admin can pause contract"],
+        requires_admin=True
     )
     
     assert design.project_name == "my_token"
     assert len(design.features) == 3
-    assert "Token" in design.data_structures
-    assert "mint" in design.transitions
+    assert "Token: record with owner and amount" in design.data_structures
+    assert "mint: (address, u64) -> Token" in design.transitions
+    assert design.requires_admin is True
 
 
 def test_evaluation_result():

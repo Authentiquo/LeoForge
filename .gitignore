@@ -46,6 +46,7 @@ MANIFEST
 *.prover
 *.verifier
 outputs/
+output/
 
 # Logs
 *.log
@@ -76,4 +77,10 @@ site/
 # Bases de données
 *.db
 *.sqlite
-*.sqlite3 
+*.sqlite3
+
+# Project specific
+workspaces/
+
+# Logs and Rules (contains runtime data)
+rules/ 
