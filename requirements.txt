@@ -4,6 +4,8 @@ python-dotenv>=1.0.0
 pydantic>=2.5.0
 openai-agents[littlellm]>=0.0.16
 typer>=0.9.0
+litellm>=1.60.1
+streamlit
 
 # Testing
 pytest>=7.0.0
