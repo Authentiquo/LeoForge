@@ -65,19 +65,112 @@ class ContractAnalyzer:
         """Analyze contract content and extract all components"""
         self.contract_info = ContractInfo(program_name="")
         
+        # Detect if it's a compiled .aleo file or source .leo file
+        is_compiled = "program " in contract_content and "function " in contract_content
+        
+        if is_compiled:
+            self._analyze_compiled_aleo(contract_content)
+        else:
+            self._analyze_source_leo(contract_content)
+        
+        return self.contract_info
+    
+    def _analyze_compiled_aleo(self, content: str):
+        """Analyze compiled .aleo file format"""
+        # Extract program name from compiled format: program name.aleo;
+        program_match = re.search(r'program\s+(\w+)\.aleo;', content)
+        if program_match:
+            self.contract_info.program_name = program_match.group(1)
+        
+        # Extract records from compiled format
+        record_pattern = r'record\s+(\w+):\s*\n((?:\s+\w+\s+as\s+[\w\.]+\s*;\s*\n)+)'
+        for match in re.finditer(record_pattern, content):
+            record_name = match.group(1)
+            record_body = match.group(2)
+            
+            record = Record(name=record_name)
+            
+            # Extract fields: owner as address.private;
+            field_pattern = r'(\w+)\s+as\s+([\w\.]+)\s*;'
+            for field_match in re.finditer(field_pattern, record_body):
+                field_name = field_match.group(1)
+                field_type = field_match.group(2).replace('.private', '').replace('.public', '')
+                record.fields[field_name] = field_type
+            
+            self.contract_info.records.append(record)
+        
+        # Extract mappings from compiled format
+        mapping_pattern = r'mapping\s+(\w+):\s*\n\s*key\s+as\s+([\w\.]+)\s*;\s*\n\s*value\s+as\s+([\w\.]+)\s*;'
+        for match in re.finditer(mapping_pattern, content):
+            mapping = Mapping(
+                name=match.group(1),
+                key_type=match.group(2).replace('.public', '').replace('.private', ''),
+                value_type=match.group(3).replace('.public', '').replace('.private', '')
+            )
+            self.contract_info.mappings.append(mapping)
+        
+        # Extract functions (transitions) from compiled format
+        function_pattern = r'function\s+(\w+):((?:\s*input\s+\w+\s+as\s+[\w\.]+\s*;\s*\n)*)'
+        for match in re.finditer(function_pattern, content):
+            function_name = match.group(1)
+            params_section = match.group(2)
+            
+            transition = Transition(name=function_name, is_async=False)
+            
+            # Extract parameters: input r0 as address.private;
+            param_pattern = r'input\s+(\w+)\s+as\s+([\w\.]+)\s*;'
+            param_index = 0
+            for param_match in re.finditer(param_pattern, params_section):
+                param_var = param_match.group(1)
+                param_type_full = param_match.group(2)
+                
+                # Determine visibility and clean type
+                visibility = "public"
+                if '.private' in param_type_full:
+                    visibility = "private"
+                param_type = param_type_full.replace('.private', '').replace('.public', '')
+                
+                # Create readable parameter name (r0 -> param0, etc.)
+                param_name = f"param{param_index}"
+                param_index += 1
+                
+                transition.parameters.append({
+                    'name': param_name,
+                    'type': param_type,
+                    'visibility': visibility
+                })
+            
+            self.contract_info.transitions.append(transition)
+        
+        # Extract structs from compiled format
+        struct_pattern = r'struct\s+(\w+):\s*\n((?:\s+\w+\s+as\s+\w+\s*;\s*\n)+)'
+        for match in re.finditer(struct_pattern, content):
+            struct_name = match.group(1)
+            struct_body = match.group(2)
+            
+            fields = {}
+            field_pattern = r'(\w+)\s+as\s+(\w+)\s*;'
+            for field_match in re.finditer(field_pattern, struct_body):
+                fields[field_match.group(1)] = field_match.group(2)
+            
+            self.contract_info.structs.append({
+                'name': struct_name,
+                'fields': fields
+            })
+    
+    def _analyze_source_leo(self, content: str):
+        """Analyze source .leo file format (original implementation)"""
         # Extract program name
-        program_match = re.search(r'program\s+(\w+)\.aleo\s*{', contract_content)
+        program_match = re.search(r'program\s+(\w+)\.aleo\s*{', content)
         if program_match:
             self.contract_info.program_name = program_match.group(1)
         
         # Extract components
-        self._extract_constants(contract_content)
-        self._extract_structs(contract_content)
-        self._extract_records(contract_content)
-        self._extract_mappings(contract_content)
-        self._extract_transitions(contract_content)
-        
-        return self.contract_info
+        self._extract_constants(content)
+        self._extract_structs(content)
+        self._extract_records(content)
+        self._extract_mappings(content)
+        self._extract_transitions(content)
     
     def _extract_constants(self, content: str):
         """Extract constants from contract"""

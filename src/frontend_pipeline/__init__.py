@@ -1,20 +1,25 @@
 """
-Frontend Pipeline for AleoForge
-Automated frontend generation from Aleo smart contracts
+Frontend Pipeline for Aleo Smart Contracts
+Generates modern dApp frontends from Aleo smart contracts using AI agents
 """
 
 from .contract_analyzer import ContractAnalyzer, ContractInfo
-from .frontend_generator import FrontendGenerator
-from .pipeline import FrontendArchitect, generate_frontend_from_contract
-from .pipeline_simple import SimpleFrontendArchitect
+
+# New agent-based pipelines
+from .agent_pipeline import DAppAgentPipeline, generate_dapp_frontend
+from .refactored_pipeline import ProgressiveFrontendPipeline, generate_progressive_frontend
 
 __all__ = [
+    # Core analyzer
     'ContractAnalyzer',
-    'ContractInfo', 
-    'FrontendGenerator',
-    'FrontendArchitect',
-    'SimpleFrontendArchitect',
-    'generate_frontend_from_contract'
+    'ContractInfo',
+    # Agent-based pipeline
+    'DAppAgentPipeline',
+    'generate_dapp_frontend',
+    # Progressive pipeline
+    'ProgressiveFrontendPipeline',
+    'generate_progressive_frontend'
 ]
 
-__version__ = '0.2.0' 
+# Version info
+__version__ = '0.3.0' 
