@@ -217,93 +217,89 @@ Then open your browser to `http://localhost:8501`
 
 ```mermaid
 graph TB
-    %% Styles pour les sous-graphes avec des couleurs plus vives
-    classDef ui fill:#e1f5fe,stroke:#0288d1,stroke-width:3px,color:#01579b,font-size:14px,font-weight:bold;
-    classDef core fill:#fff8e1,stroke:#ff8f00,stroke-width:3px,color:#e65100,font-size:14px,font-weight:bold;
-    classDef agent fill:#e8f5e9,stroke:#4caf50,stroke-width:3px,color:#1b5e20,font-size:14px,font-weight:bold;
-    classDef services fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px,color:#4a148c,font-size:14px,font-weight:bold;
-    classDef storage fill:#ffebee,stroke:#f44336,stroke-width:3px,color:#b71c1c,font-size:14px,font-weight:bold;
+    %% Styles pour les sous-graphes avec des couleurs modernes et vibrantes
+    classDef ui fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#FFFFFF,font-size:16px,font-weight:bold;
+    classDef core fill:#FF6B6B,stroke:#C44545,stroke-width:3px,color:#FFFFFF,font-size:16px,font-weight:bold;
+    classDef agent fill:#4ECDC4,stroke:#2A7A76,stroke-width:3px,color:#FFFFFF,font-size:16px,font-weight:bold;
+    classDef services fill:#FFD93D,stroke:#CCB030,stroke-width:3px,color:#333333,font-size:16px,font-weight:bold;
+    classDef storage fill:#95E1D3,stroke:#5CA89C,stroke-width:3px,color:#2C3E50,font-size:16px,font-weight:bold;
     
-    %% Styles pour les nœuds avec des couleurs de fond gradient
-    classDef uiNode fill:linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%),stroke:#1976d2,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef coreNode fill:linear-gradient(135deg, #ffb74d 0%, #ffa726 100%),stroke:#f57c00,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef agentNode fill:linear-gradient(135deg, #81c784 0%, #66bb6a 100%),stroke:#388e3c,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef serviceNode fill:linear-gradient(135deg, #ba68c8 0%, #ab47bc 100%),stroke:#7b1fa2,stroke-width:2px,color:#fff,font-weight:bold;
-    classDef storageNode fill:linear-gradient(135deg, #ef5350 0%, #e53935 100%),stroke:#c62828,stroke-width:2px,color:#fff,font-weight:bold;
-
-    subgraph UI["🖥️ Interface Utilisateur"]
-        A["💻 Web UI<br/>Streamlit Dashboard"]
-        B["⌨️ CLI<br/>Rich Console Interface"]
+    %% Styles pour les nœuds individuels avec effets de dégradé
+    classDef nodeUI fill:#5BA3F5,stroke:#3D7FCC,stroke-width:2px,color:#FFFFFF,font-weight:bold,font-size:14px;
+    classDef nodeCore fill:#FF8787,stroke:#E55555,stroke-width:2px,color:#FFFFFF,font-weight:bold,font-size:14px;
+    classDef nodeAgent fill:#6FE5DD,stroke:#4BA8A2,stroke-width:2px,color:#FFFFFF,font-weight:bold,font-size:14px;
+    classDef nodeServices fill:#FFE066,stroke:#E5C252,stroke-width:2px,color:#2C3E50,font-weight:bold,font-size:14px;
+    classDef nodeStorage fill:#A8EDEA,stroke:#70BDB8,stroke-width:2px,color:#2C3E50,font-weight:bold,font-size:14px;
+    
+    subgraph "🖥️ User Interface"
+        A[Web UI<br/>🌐 Streamlit]
+        B[CLI<br/>💻 Rich Console]
     end
-    class UI ui;
-    class A,B uiNode;
-
-    subgraph CORE["🎯 Orchestration Centrale"]
-        C["🎼 Project Orchestrator<br/>Gestionnaire de Workflow"]
+    class A,B nodeUI;
+    
+    subgraph "🎯 Core Orchestration"
+        C[Project Orchestrator<br/>🔄 Workflow Management]
     end
-    class CORE core;
-    class C coreNode;
-
-    subgraph AGENTS["🤖 Couche d'Agents IA"]
-        D["🏗️ Architect Agent<br/>Conception Architecture"]
-        E["⚡ Code Generator<br/>Génération Leo Code"]
-        F["🔍 Code Evaluator<br/>Évaluation Qualité"]
-        G["📚 Rule Engineer<br/>Apprentissage & Règles"]
+    class C nodeCore;
+    
+    subgraph "🤖 AI Agent Layer"
+        D[Architect Agent<br/>🏗️ Architecture Design]
+        E[Code Generator<br/>⚡ Leo Code Generation]
+        F[Code Evaluator<br/>✅ Quality Assessment]
+        G[Rule Engineer<br/>🧠 Learning & Rules]
     end
-    class AGENTS agent;
-    class D,E,F,G agentNode;
-
-    subgraph SERVICES["⚙️ Couche de Services"]
-        H["🔨 Leo Builder<br/>Service de Compilation"]
-        I["📁 Workspace Manager<br/>Gestion de Projets"]
-        J["📊 Logger Service<br/>Suivi des Erreurs"]
-        K["🧠 Rule Manager<br/>Base de Connaissances"]
+    class D,E,F,G nodeAgent;
+    
+    subgraph "⚙️ Services Layer"
+        H[Leo Builder<br/>🔨 Compilation Service]
+        I[Workspace Manager<br/>📁 Project Management]
+        J[Logger Service<br/>📊 Error Tracking]
+        K[Rule Manager<br/>📚 Knowledge Base]
     end
-    class SERVICES services;
-    class H,I,J,K serviceNode;
-
-    subgraph STORAGE["💾 Stockage & Sortie"]
-        L["📄 Generated Code<br/>Smart Contracts Leo"]
-        M["📈 Project Logs<br/>Analyse des Erreurs"]
-        N["📖 Improvement Rules<br/>Base d'Apprentissage"]
-        O["🚀 Compiled Output<br/>Contrats Déployables"]
+    class H,I,J,K nodeServices;
+    
+    subgraph "💾 Storage & Output"
+        L[Generated Code<br/>📝 Leo Smart Contracts]
+        M[Project Logs<br/>🔍 Error Analysis]
+        N[Improvement Rules<br/>💡 Learning Database]
+        O[Compiled Output<br/>🚀 Deployable Contracts]
     end
-    class STORAGE storage;
-    class L,M,N,O storageNode;
-
-    %% Flux de l'interface utilisateur avec des flèches colorées
-    A ==>|"Interface Web"| C
-    B ==>|"Ligne de commande"| C
-
-    %% Workflow principal des agents
-    C ==>|"Initialisation"| D
-    D ==>|"Architecture définie"| E
-    E ==>|"Code généré"| F
-    F ==>|"Évaluation"| G
-
-    %% Intégration des services
-    C -.->|"Build Request"| H
-    C -.->|"Project Setup"| I
-    C -.->|"Log Events"| J
-    G -.->|"Update Rules"| K
-
-    %% Boucles de rétroaction avec des styles différents
-    F -->|"❌ Amélioration requise"| E
-    H -->|"🔥 Erreurs de build"| E
-    G -->|"✨ Nouvelles règles"| D
-    G -->|"🎯 Optimisations"| E
-
-    %% Génération des sorties
-    E ==>|"💾 Sauvegarde"| L
-    J ==>|"📝 Journalisation"| M
-    G ==>|"🧠 Apprentissage"| N
-    H ==>|"🎯 Compilation"| O
-
-    %% Flux de données supplémentaires
-    K -.->|"📚 Règles appliquées"| D
-    K -.->|"🎯 Patterns"| E
-    I -.->|"📁 Structure projet"| E
-    M -.->|"📈 Analytics"| G
+    class L,M,N,O nodeStorage;
+    
+    %% User Interface Flow
+    A -.->|User Input| C
+    B -.->|CLI Commands| C
+    
+    %% Core Agent Workflow
+    C ==>|Initiates| D
+    D ==>|Design Ready| E
+    E ==>|Code Generated| F
+    F ==>|Quality Report| G
+    
+    %% Service Integration
+    C -->|Manages| H
+    C -->|Organizes| I
+    C -->|Tracks| J
+    G -->|Updates| K
+    
+    %% Feedback Loops avec styles différents
+    F -.->|🔄 Needs Improvement| E
+    H -.->|❌ Build Errors| E
+    G -.->|✨ New Rules| D
+    G -.->|📈 New Rules| E
+    
+    %% Output Generation
+    E -->|Generates| L
+    J -->|Records| M
+    G -->|Creates| N
+    H -->|Compiles| O
+    
+    %% Styles additionnels pour les flèches
+    linkStyle 0,1 stroke:#4A90E2,stroke-width:2px
+    linkStyle 2,3,4,5 stroke:#FF6B6B,stroke-width:3px
+    linkStyle 6,7,8,9 stroke:#FFD93D,stroke-width:2px
+    linkStyle 10,11,12,13 stroke:#4ECDC4,stroke-width:2px,stroke-dasharray: 5 5
+    linkStyle 14,15,16,17 stroke:#95E1D3,stroke-width:2px
 ```
 
 ### Agent Responsibilities
