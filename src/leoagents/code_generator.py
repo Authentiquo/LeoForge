@@ -42,30 +42,59 @@ class CodeGeneratorAgent:
                 model=LitellmModel(model=self.model, api_key=self.config.anthropic_api_key),
                 output_type=GeneratedCode
             )
+    
         
             message = f"""
-            PROJECT: {requirements.project_name}
-            TYPE: {requirements.architecture.project_type}
-            DESCRIPTION: {requirements.description}
+                Generate a complete Leo program for: {requirements.project_name}
 
-            FEATURES:
-            {chr(10).join(f"• {f}" for f in requirements.features)}
+                PROJECT TYPE: {requirements.architecture.project_type}
+                DESCRIPTION: {requirements.description}
 
-            DATA STRUCTURES:
-            {chr(10).join(f"• {d}" for d in requirements.architecture.data_structures)}
+                FEATURES TO IMPLEMENT:
+                {chr(10).join(f"• {f}" for f in requirements.features)}
 
-            TRANSITIONS:
-            {chr(10).join(f"• {t}" for t in requirements.architecture.transitions)}
+                REQUIRED DATA STRUCTURES:
+                {chr(10).join(f"• {d}" for d in requirements.architecture.data_structures)}
 
-            {f"ADMIN FEATURES: {chr(10).join(f'• {a}' for a in requirements.architecture.admin_features)}" if requirements.architecture.admin_features else ""}
+                REQUIRED TRANSITIONS:
+                {chr(10).join(f"• {t}" for t in requirements.architecture.transitions)}
 
-            Generate complete Leo code implementing all features.
-"""
+                {f"ADMIN FEATURES:{chr(10)}{chr(10).join(f'• {a}' for a in requirements.architecture.admin_features)}" if requirements.architecture.admin_features else ""}
+
+                You MUST generate the COMPLETE Leo code file content.
+                The output should be a valid GeneratedCode object with:
+                - project_name: "{requirements.project_name}"
+                - code: <THE FULL LEO PROGRAM CODE>
+
+                Start the code with: program {requirements.project_name}.aleo {{
+                End with closing brace.
+
+                GENERATE THE FULL LEO CODE NOW:
+                """
             
             result = await Runner.run(agent, message)
-            
-        return result.final_output
-    
+
+            if result.final_output.code:
+                return result.final_output
+            else:
+                input = result
+                prompt = """Extract the Leo code from the previous response.
+                
+                Sometimes the code is embedded within explanatory text or formatted as user input.
+                Your task is to:
+                1. Identify the Leo program code within the response
+                2. Extract ONLY the Leo code (starting with 'program' and ending with closing brace)
+                3. Return it as a clean GeneratedCode object
+                
+                Focus only on extracting the actual Leo code, ignoring any surrounding text or explanations."""
+                agentGetCode = Agent(
+                    name="FixUserInputAgent",
+                    instructions=prompt,
+                    model='gpt-4.1-nano-2025-04-14',
+                    output_type=GeneratedCode
+                )
+                result = await Runner.run(agentGetCode, input)
+                return result.final_output
 
 
     async def fix_compilation_errors(self, 
