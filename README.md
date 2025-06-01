@@ -217,58 +217,73 @@ Then open your browser to `http://localhost:8501`
 
 ```mermaid
 graph TB
+    %% Styles pour les sous-graphes
+    classDef ui fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1,font-size:16px;
+    classDef core fill:#fff3e0,stroke:#ff9800,stroke-width:2px,color:#e65100,font-size:16px;
+    classDef agent fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20,font-size:16px;
+    classDef services fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c,font-size:16px;
+    classDef storage fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#b71c1c,font-size:16px;
+
+    %% Styles pour les nœuds individuels
+    classDef node fill:#fff,stroke:#333,stroke-width:2px,color:#222,font-weight:bold,font-size:15px;
+
     subgraph "User Interface"
-        A[Web UI<br/>Streamlit] 
+        A[Web UI<br/>Streamlit]
         B[CLI<br/>Rich Console]
     end
-    
+    class A,B ui,node;
+
     subgraph "Core Orchestration"
         C[Project Orchestrator<br/>Workflow Management]
     end
-    
+    class C core,node;
+
     subgraph "AI Agent Layer"
         D[Architect Agent<br/>Architecture Design]
         E[Code Generator<br/>Leo Code Generation]
         F[Code Evaluator<br/>Quality Assessment]
         G[Rule Engineer<br/>Learning & Rules]
     end
-    
+    class D,E,F,G agent,node;
+
     subgraph "Services Layer"
         H[Leo Builder<br/>Compilation Service]
         I[Workspace Manager<br/>Project Management]
         J[Logger Service<br/>Error Tracking]
         K[Rule Manager<br/>Knowledge Base]
     end
-    
+    class H,I,J,K services,node;
+
     subgraph "Storage & Output"
         L[Generated Code<br/>Leo Smart Contracts]
         M[Project Logs<br/>Error Analysis]
         N[Improvement Rules<br/>Learning Database]
         O[Compiled Output<br/>Deployable Contracts]
     end
-    
+    class L,M,N,O storage,node;
+
     %% User Interface Flow
     A --> C
     B --> C
-    
+
     %% Core Agent Workflow
     C --> D
     D --> E
     E --> F
     F --> G
-    
+
     %% Service Integration
     C --> H
     C --> I
     C --> J
     G --> K
-    
+
     %% Feedback Loops
     F -->|Needs Improvement| E
     H -->|Build Errors| E
     G -->|New Rules| D
     G -->|New Rules| E
-    
+
     %% Output Generation
     E --> L
     J --> M
