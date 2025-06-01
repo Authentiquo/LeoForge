@@ -1,0 +1,18 @@
+Build a DeFi lending protocol in Aleo that solves the critical record ownership vs liquidation access structural issue.
+CRITICAL CONSTRAINT TO ADDRESS: In Aleo, only record owners can use their records as transition inputs, but we need third parties to liquidate undercollateralized positions. The current structure creates an impossible situation where:
+
+Loan owners cannot liquidate (blocked by access control)
+Third parties cannot liquidate (they don't own the loan records)
+Result: No liquidations possible
+
+REQUIREMENTS:
+
+Redesign the architecture so third parties can liquidate without owning loan records
+Consider using public mappings to store liquidatable loan data instead of private records
+Maintain privacy for borrowers while enabling public liquidation mechanisms
+Ensure only external parties can liquidate (no self-liquidation)
+Keep core DeFi features: deposit, borrow, repay, withdraw, interest calculation
+Include proper collateralization ratios and liquidation incentives
+
+SUGGESTED APPROACH: Use hybrid architecture with private records for user ownership and public mappings for liquidation data visibility, or implement a loan registry system accessible to liquidators.
+FOCUS: Solve the structural contradiction while maintaining security and privacy principles
