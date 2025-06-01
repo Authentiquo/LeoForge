@@ -370,14 +370,6 @@ Every generation run is logged and analyzed:
 - ✅ Error analysis and correction
 - ✅ Project type support (Token, NFT, DeFi, Game, Oracle)
 
-### Next Release (v1.1.0) - Q2 2024
-- **Enhanced AI Models**: Support for latest Claude and GPT models
-- **Testing Framework**: Automatic test generation for generated contracts
-- **Template System**: Pre-built templates for common contract patterns
-- **Security Auditing**: Advanced security analysis with vulnerability scoring
-- **Documentation Generation**: Automatic README and API documentation
-- **Multi-language Support**: Support for additional programming languages
-
 ### 🚀 Next Steps
 
 🔧 Performance Optimization
