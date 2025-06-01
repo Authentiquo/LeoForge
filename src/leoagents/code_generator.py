@@ -18,7 +18,7 @@ class CodeGeneratorAgent:
         self.model = model or self.config.default_generator_model
         self.rule_manager = RuleManager()
         self.client = AsyncAnthropic(api_key=self.config.anthropic_api_key)
-        self.max_tokens = 6000
+        self.max_tokens = 8192  
     
     def _format_leo_code(self, code: str) -> str:
         """Format Leo code by replacing literal \n with actual newlines"""
