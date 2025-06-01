@@ -50,10 +50,21 @@ class WorkspaceManager:
     def save_code(project_name: str, code: str) -> bool:
         """Save code to workspace main.leo file"""
         try:
+            # Format the code before saving
+            formatted_code = code.replace('\\n', '\n')
+            
+            # Clean up any double newlines that might have been created
+            while '\n\n\n' in formatted_code:
+                formatted_code = formatted_code.replace('\n\n\n', '\n\n')
+            
+            # Ensure proper spacing around braces
+            formatted_code = formatted_code.replace('}{', '}\n{')
+            formatted_code = formatted_code.strip()
+            
             workspace_path = WorkspaceManager._get_workspace_path(project_name)
             file_path = workspace_path / "src" / "main.leo"
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(code, encoding="utf-8")
+            file_path.write_text(formatted_code, encoding="utf-8")
             return True
         except Exception as e:
             return False

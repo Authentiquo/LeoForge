@@ -2,13 +2,11 @@
 Code Generator Agent - Generates Leo code from normalized requirements
 """
 import os
-from agents import Agent, Runner, trace
-from agents.agent_output import AgentOutputSchema
+from anthropic import AsyncAnthropic
 from src.models import CodeRequirements, GeneratedCode, BuildResult
 from src.config import get_config
 from src.services.rule_manager import RuleManager
 from .prompts import get_codegen_prompt, get_error_fix_prompt
-from agents.extensions.models.litellm_model import LitellmModel
 from rich import console
 c = console.Console()
 
@@ -19,6 +17,22 @@ class CodeGeneratorAgent:
         self.config = get_config()
         self.model = model or self.config.default_generator_model
         self.rule_manager = RuleManager()
+        self.client = AsyncAnthropic(api_key=self.config.anthropic_api_key)
+        self.max_tokens = 4000
+    
+    def _format_leo_code(self, code: str) -> str:
+        """Format Leo code by replacing literal \n with actual newlines"""
+        # Replace literal \n with actual newlines
+        formatted_code = code.replace('\\n', '\n')
+        
+        # Clean up any double newlines that might have been created
+        while '\n\n\n' in formatted_code:
+            formatted_code = formatted_code.replace('\n\n\n', '\n\n')
+        
+        # Ensure proper spacing around braces
+        formatted_code = formatted_code.replace('}{', '}\n{')
+        
+        return formatted_code.strip()
     
     def _get_prompt_with_rules(self) -> str:
         """Get compact prompt with learned rules"""
@@ -32,70 +46,102 @@ class CodeGeneratorAgent:
         
         return get_codegen_prompt(self.config.admin_address, rules)
     
+    def _extract_leo_code_from_text(self, content: str) -> str:
+        """Extract Leo code from text content"""
+        # Look for code blocks first
+        if "```" in content:
+            lines = content.split('\n')
+            in_code_block = False
+            code_lines = []
+            
+            for line in lines:
+                if line.strip().startswith('```'):
+                    if in_code_block:
+                        break  # End of code block
+                    else:
+                        in_code_block = True  # Start of code block
+                        continue
+                
+                if in_code_block:
+                    code_lines.append(line)
+            
+            if code_lines:
+                potential_code = '\n'.join(code_lines)
+                if "program " in potential_code:
+                    return potential_code
+        
+        # If no code blocks, look for program declaration
+        if "program " in content:
+            start = content.find("program ")
+            if start != -1:
+                # Find the end of the program by counting braces
+                brace_count = 0
+                i = start
+                while i < len(content):
+                    if content[i] == '{':
+                        brace_count += 1
+                    elif content[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            return content[start:i+1]
+                    i += 1
+        
+        return content  # Return as-is if no specific pattern found
+    
     async def generate_code(self, requirements: CodeRequirements) -> GeneratedCode:
         """Generate Leo code from requirements"""
         
-        with trace("generate_code"):
-            agent = Agent(
-                name="CodeGeneratorAgent",
-                instructions=self._get_prompt_with_rules(),
-                model=LitellmModel(model=self.model, api_key=self.config.anthropic_api_key),
-                output_type=GeneratedCode
-            )
-    
+        system_prompt = self._get_prompt_with_rules()
         
-            message = f"""
-                Generate a complete Leo program for: {requirements.project_name}
+        message = f"""
+Generate a complete Leo program for: {requirements.project_name}
 
-                PROJECT TYPE: {requirements.architecture.project_type}
-                DESCRIPTION: {requirements.description}
+PROJECT TYPE: {requirements.architecture.project_type}
+DESCRIPTION: {requirements.description}
 
-                FEATURES TO IMPLEMENT:
-                {chr(10).join(f"• {f}" for f in requirements.features)}
+FEATURES TO IMPLEMENT:
+{chr(10).join(f"• {f}" for f in requirements.features)}
 
-                REQUIRED DATA STRUCTURES:
-                {chr(10).join(f"• {d}" for d in requirements.architecture.data_structures)}
+REQUIRED DATA STRUCTURES:
+{chr(10).join(f"• {d}" for d in requirements.architecture.data_structures)}
 
-                REQUIRED TRANSITIONS:
-                {chr(10).join(f"• {t}" for t in requirements.architecture.transitions)}
+REQUIRED TRANSITIONS:
+{chr(10).join(f"• {t}" for t in requirements.architecture.transitions)}
 
-                {f"ADMIN FEATURES:{chr(10)}{chr(10).join(f'• {a}' for a in requirements.architecture.admin_features)}" if requirements.architecture.admin_features else ""}
+{f"ADMIN FEATURES:{chr(10)}{chr(10).join(f'• {a}' for a in requirements.architecture.admin_features)}" if requirements.architecture.admin_features else ""}
 
-                You MUST generate the COMPLETE Leo code file content.
-                The output should be a valid GeneratedCode object with:
-                - project_name: "{requirements.project_name}"
-                - code: <THE FULL LEO PROGRAM CODE>
+Generate the complete Leo program code.
+Start the code with: program {requirements.project_name}.aleo {{
+End with closing brace.
 
-                Start the code with: program {requirements.project_name}.aleo {{
-                End with closing brace.
-
-                GENERATE THE FULL LEO CODE NOW:
-                """
+Return ONLY the Leo code, no explanations or additional text.
+"""
+        
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": message}
+                ]
+            )
             
-            result = await Runner.run(agent, message)
-
-            if result.final_output.code:
-                return result.final_output
-            else:
-                input = result
-                prompt = """Extract the Leo code from the previous response.
+            # Extract content directly
+            content = response.content[0].text
+            
+            # Extract and format the Leo code
+            code = self._extract_leo_code_from_text(content)
+            formatted_code = self._format_leo_code(code)
+            
+            return GeneratedCode(
+                project_name=requirements.project_name,
+                code=formatted_code
+            )
                 
-                Sometimes the code is embedded within explanatory text or formatted as user input.
-                Your task is to:
-                1. Identify the Leo program code within the response
-                2. Extract ONLY the Leo code (starting with 'program' and ending with closing brace)
-                3. Return it as a clean GeneratedCode object
-                
-                Focus only on extracting the actual Leo code, ignoring any surrounding text or explanations."""
-                agentGetCode = Agent(
-                    name="FixUserInputAgent",
-                    instructions=prompt,
-                    model='gpt-4.1-nano-2025-04-14',
-                    output_type=GeneratedCode
-                )
-                result = await Runner.run(agentGetCode, input)
-                return result.final_output
-
+        except Exception as e:
+            c.print(f"[red]Error calling Anthropic API: {e}[/red]")
+            raise
 
     async def fix_compilation_errors(self, 
                                    code: str, 
@@ -103,18 +149,35 @@ class CodeGeneratorAgent:
                                    requirements: CodeRequirements) -> GeneratedCode:
         """Fix compilation errors in existing code"""
         
-        agent = Agent(
-            name="CodeFixerAgent",
-            instructions=self._get_prompt_with_rules(),
-            model=LitellmModel(model=self.model, api_key=self.config.anthropic_api_key),
-            output_type=GeneratedCode
-        )
-        
+        system_prompt = self._get_prompt_with_rules()
         message = get_error_fix_prompt().format(
             code=code,
             errors=build_result.stderr
         )
         
-        result = await Runner.run(agent, message)
+        message += "\n\nReturn ONLY the corrected Leo code, no explanations or additional text."
         
-        return result.final_output
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": message}
+                ]
+            )
+            
+            content = response.content[0].text
+            
+            # Extract and format the Leo code
+            code = self._extract_leo_code_from_text(content)
+            formatted_code = self._format_leo_code(code)
+            
+            return GeneratedCode(
+                project_name=requirements.project_name,
+                code=formatted_code
+            )
+                
+        except Exception as e:
+            c.print(f"[red]Error fixing compilation errors: {e}[/red]")
+            raise

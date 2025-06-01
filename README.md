@@ -407,14 +407,6 @@ Leo Contract Linker: Intelligent contract composition and dependency management
 - Success rate: approximately 50%
 - Adds processing overhead and latency
 
-**Temporary Fix**:
-```python
-# Fallback extraction when SDK fails to return code
-if not result.final_output.code:
-    # Use secondary agent to parse and extract Leo code
-    agentGetCode = Agent(name="FixUserInputAgent", ...)
-    result = await Runner.run(agentGetCode, input)
-```
 
 **Planned Resolution**: 
 Replace the OpenAI Agent SDK with direct LLM API calls to eliminate the framework layer causing the return issue. This will provide:
@@ -423,9 +415,9 @@ Replace the OpenAI Agent SDK with direct LLM API calls to eliminate the framewor
 - Better error handling
 - Improved performance
 
-**Status**: Planned for future development (pending time allocation)
-         
-   
+**Status**: Solving the issue where complex smart contracts reach the LLM token limit defined by the SDK, causing code truncation and strict conversation constraints.
+
+=> Need to define a code generator that dynamically adjusts max_tokens based on smart contract complexity to prevent truncation and errors during generation. Size by default is 4000 max (view the code generator)
 
 
 
