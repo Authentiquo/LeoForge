@@ -378,70 +378,64 @@ Every generation run is logged and analyzed:
 - **Documentation Generation**: Automatic README and API documentation
 - **Multi-language Support**: Support for additional programming languages
 
-### Future Releases (v2.0.0+) - 2024
-- **Multi-contract Projects**: Support for complex, interconnected contract systems
-- **Collaboration Features**: Team workspaces and shared rule databases
-- **UI/UX Improvements**: Enhanced web interface with visual contract designer
-- **Analytics Dashboard**: Comprehensive project analytics and insights
-- **CI/CD Integration**: GitHub Actions and automated deployment workflows
-- **Cloud Deployment**: Hosted version with API access
-- **Plugin System**: Extensible architecture for custom agents and tools
-- **Mobile App**: Mobile interface for contract generation and management
+### 🚀 Next Steps
 
-### Long-term Vision
-- **Advanced AI Integration**: Custom-trained models for Leo-specific code generation
-- **Enterprise Features**: Advanced team management and enterprise security
-- **Ecosystem Integration**: Deep integration with Aleo ecosystem tools
-- **Market Intelligence**: Smart contract analytics and market insights
-- **Predictive Analysis**: AI-powered performance and security predictions
+🔧 Performance Optimization
 
-## Contributing
+Reduce cost and generation time by streamlining multi-agent framework
+Eliminate redundant layers for direct AI-to-Leo compilation
 
-We welcome contributions from the community! Here's how you can help:
+🔗 Leo Ecosystem Integration
 
-### Bug Reports
-Found a bug? Please open an issue with:
-- Detailed description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details (OS, Python version, etc.)
+MCP for Leo Interaction: Native Model Context Protocol client for seamless blockchain integration
+Row-by-Row Smart Debugger: Interactive Leo code debugging with step-through execution
+Leo Unit Testing: Automated test generation and validation framework
 
-### Feature Requests
-Have an idea? We'd love to hear it! Please include:
-- Clear description of the feature
-- Use cases and benefits
-- Implementation suggestions (if any)
+🌐 Advanced Workflow Design
 
-### Development
+Non-Deterministic Workflows: Adaptive AI agents with parallel processing capabilities
+Context-Aware Generation: Dynamic strategies based on contract complexity
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes** and add tests
-4. **Ensure tests pass**: `pytest`
-5. **Commit your changes**: `git commit -m 'Add amazing feature'`
-6. **Push to the branch**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
+🎨 Full-Stack Development
 
-### Development Guidelines
-- Follow PEP 8 style guidelines
-- Add type hints for all functions
-- Include docstrings for public methods
-- Write tests for new features
-- Update documentation as needed
+Frontend Generation: Automatic Web3 interface creation for smart contracts
+Leo Contract Linker: Intelligent contract composition and dependency management
+   
 
-## License
+## Known Issues
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### OpenAI Agent SDK Code Generation Bug
 
-## Acknowledgments
+**Issue**: The OpenAI Agent SDK framework has a bug where code is correctly generated but fails to be returned in the response object for complex cases.
 
-- **Aleo Team** - For creating the innovative Leo programming language
-- **Anthropic & OpenAI** - For providing powerful AI models
-- **Rich Library** - For the beautiful console interface
-- **Streamlit** - For the amazing web framework
-- **Open Source Community** - For inspiration and contributions
+**Impact**: Code generation requests may appear to fail even when the underlying LLM successfully generates the Leo code.
 
----
+**Current Workaround**: 
+- Implemented a fallback mechanism using a secondary agent to extract code from the raw response
+- Success rate: approximately 50%
+- Adds processing overhead and latency
+
+**Temporary Fix**:
+```python
+# Fallback extraction when SDK fails to return code
+if not result.final_output.code:
+    # Use secondary agent to parse and extract Leo code
+    agentGetCode = Agent(name="FixUserInputAgent", ...)
+    result = await Runner.run(agentGetCode, input)
+```
+
+**Planned Resolution**: 
+Replace the OpenAI Agent SDK with direct LLM API calls to eliminate the framework layer causing the return issue. This will provide:
+- 100% reliability for code responses
+- Reduced complexity
+- Better error handling
+- Improved performance
+
+**Status**: Planned for future development (pending time allocation)
+         
+   
+
+
 
 <div align="center">
 
