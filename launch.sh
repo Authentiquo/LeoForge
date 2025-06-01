@@ -20,7 +20,7 @@ echo -e "${BLUE}Activating virtual environment...${NC}"
 source venv/bin/activate
 
 # Check if dependencies are installed
-if ! python -c "import rich" 2>/dev/null; then
+if ! python3 -c "import rich" 2>/dev/null; then
     echo -e "${YELLOW}Installing dependencies...${NC}"
     pip install -r requirements.txt
     echo -e "${GREEN}✓ Dependencies installed${NC}"
@@ -45,4 +45,4 @@ fi
 # Run LeoForge
 echo -e "${GREEN}🚀 Starting LeoForge...${NC}"
 echo ""
-python main.py "$@" 
+python3 main.py "$@" 

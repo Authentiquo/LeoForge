@@ -3,7 +3,7 @@ Project Orchestrator - Manages the complete code generation workflow
 """
 import asyncio
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable, Dict, Any
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
@@ -25,9 +25,11 @@ test_result = None
 class ProjectOrchestrator:
     """Orchestrates the complete Leo project generation workflow"""
     
-    def __init__(self, max_iterations: int = 5, console: Optional[Console] = None):
+    def __init__(self, max_iterations: int = 5, console: Optional[Console] = None, 
+                 status_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None):
         self.max_iterations = max_iterations
         self.console = console or Console()
+        self.status_callback = status_callback  # Callback for real-time status updates
         
         # Initialize agents
         self.architect = ArchitectAgent()
@@ -40,6 +42,11 @@ class ProjectOrchestrator:
         self.builder = LeoBuilder()
         self.logger = LeoLogger()
     
+    def _update_status(self, status_type: str, data: Dict[str, Any]):
+        """Send status update through callback if available"""
+        if self.status_callback:
+            self.status_callback(status_type, data)
+    
     async def generate_project(self, user_query: UserQuery) -> ProjectResult:
         """Execute the complete project generation workflow"""
         start_time = time.time()
@@ -50,17 +57,30 @@ class ProjectOrchestrator:
             border_style="cyan"
         ))
         
+        # Send initial status
+        self._update_status("start", {"query": user_query.query})
+        
         # Start logging run
         run_log = self.logger.start_run(user_query.query[:50])  # Use first 50 chars as project name
         
         try:
             # Step 1: Architecture Design
+            self._update_status("architecture_start", {"message": "🏗️ Designing architecture..."})
             with self.console.status("[bold green]🏗️  Designing architecture..."):
                 architecture = await self.architect.design_architecture(user_query)
                 self.console.print("[green]✓[/green] Architecture design complete")
                 
                 # Log architecture step
                 self.logger.log_resolution_step(f"Architecture designed: {architecture.project_name}")
+                
+                # Send architecture complete status
+                self._update_status("architecture_complete", {
+                    "project_name": architecture.project_name,
+                    "project_type": architecture.project_type.value,
+                    "features": architecture.features,
+                    "data_structures": architecture.data_structures,
+                    "transitions": architecture.transitions
+                })
             
             # Create normalized requirements
             requirements = CodeRequirements(
@@ -74,6 +94,7 @@ class ProjectOrchestrator:
             self._display_architecture(architecture)
             
             # Step 2: Create Workspace
+            self._update_status("workspace_start", {"message": "📁 Creating workspace..."})
             success, workspace_path = self.workspace_manager.create_workspace(requirements.project_name)
             if not success:
                 self.logger.log_error(
@@ -90,6 +111,8 @@ class ProjectOrchestrator:
                 # Analyze the failed run
                 await self._analyze_and_learn(completed_run)
                 
+                self._update_status("error", {"message": f"Failed to create workspace: {workspace_path}"})
+                
                 return ProjectResult(
                     success=False,
                     project_name=requirements.project_name,
@@ -98,6 +121,7 @@ class ProjectOrchestrator:
             
             self.console.print(f"[green]✓[/green] Workspace created: [dim]{workspace_path}[/dim]")
             self.logger.log_resolution_step(f"Workspace created at: {workspace_path}")
+            self._update_status("workspace_complete", {"path": workspace_path})
             
             # Step 3: Generation Loop
             iterations = []
@@ -120,11 +144,19 @@ class ProjectOrchestrator:
                     # Generate or fix code
                     if iteration_num == 1:
                         progress.update(task, description="[yellow]Generating initial code...")
+                        self._update_status("code_generation_start", {
+                            "iteration": iteration_num,
+                            "message": "✨ Generating initial code..."
+                        })
                         generated = await self.generator.generate_code(requirements)
                         self.logger.log_resolution_step("Initial code generation")
                         
                     else:
                         progress.update(task, description="[yellow]Fixing compilation errors...")
+                        self._update_status("code_fix_start", {
+                            "iteration": iteration_num,
+                            "message": "🔧 Fixing compilation errors..."
+                        })
                         generated = await self.generator.fix_compilation_errors(
                             final_code,
                             iterations[-1].build,
@@ -139,22 +171,54 @@ class ProjectOrchestrator:
                     self.workspace_manager.save_code(requirements.project_name, generated.code)
                     final_code = generated.code
                     
+                    # Send code generation complete status
+                    self._update_status("code_generation_complete", {
+                        "iteration": iteration_num,
+                        "code_preview": generated.code[:500] + "..." if len(generated.code) > 500 else generated.code
+                    })
+                    
                     # Evaluate code
                     progress.update(task, description="[yellow]Evaluating code quality...")
+                    self._update_status("evaluation_start", {
+                        "iteration": iteration_num,
+                        "message": "🔍 Evaluating code quality..."
+                    })
                     evaluation = await self.evaluator.evaluate_code(generated, requirements)
                     
                     # Log evaluation issues
                     self.logger.log_evaluation_issues(iteration_num, evaluation, generated.code)
                     
+                    # Send evaluation complete status
+                    self._update_status("evaluation_complete", {
+                        "iteration": iteration_num,
+                        "score": evaluation.score,
+                        "is_complete": evaluation.is_complete,
+                        "has_errors": evaluation.has_errors,
+                        "missing_features": evaluation.missing_features,
+                        "improvements": evaluation.improvements[:3]
+                    })
+                    
                     # Build project if evaluation passes minimum threshold
                     build_result = None
                     if evaluation.score >= 5.0:
                         progress.update(task, description="[yellow]Building project...")
+                        self._update_status("build_start", {
+                            "iteration": iteration_num,
+                            "message": "🔨 Building project..."
+                        })
                         build_result = self.builder.build_project(requirements.project_name)
                         
                         # Log build errors
                         if build_result and not build_result.success:
                             self.logger.log_build_errors(iteration_num, build_result, generated.code)
+                        
+                        # Send build complete status
+                        self._update_status("build_complete", {
+                            "iteration": iteration_num,
+                            "success": build_result.success if build_result else False,
+                            "errors": build_result.errors[:3] if build_result and build_result.errors else [],
+                            "build_time": build_result.build_time if build_result else 0
+                        })
                     
                     # Create iteration result
                     iteration_result = IterationResult(
@@ -179,6 +243,10 @@ class ProjectOrchestrator:
                             f"Project built successfully in {iteration_num} iteration(s)"
                         )
                         self.logger.log_resolution_step(f"Build successful at iteration {iteration_num}")
+                        self._update_status("success", {
+                            "iterations": iteration_num,
+                            "message": "🎉 Project built successfully!"
+                        })
                         break
                     
                     # Continue iterating if we have build errors and haven't reached max iterations
@@ -189,6 +257,9 @@ class ProjectOrchestrator:
                                 f"\n[yellow]⚠️  Reached maximum iterations ({self.max_iterations}). "
                                 f"Build still failing. Manual intervention may be required.[/yellow]"
                             )
+                            self._update_status("max_iterations", {
+                                "message": "⚠️ Reached maximum iterations"
+                            })
                         elif evaluation.score >= 7.0:
                             self.console.print(
                                 f"\n[yellow]⚠️  Code evaluation passed but build failed. "
@@ -199,6 +270,10 @@ class ProjectOrchestrator:
                             f"\n[red]⚠️  Code quality too low (score: {evaluation.score:.1f}). "
                             f"Stopping iterations.[/red]"
                         )
+                        self._update_status("low_quality", {
+                            "score": evaluation.score,
+                            "message": "⚠️ Code quality too low"
+                        })
                         break
             
             # Create final result
@@ -207,6 +282,15 @@ class ProjectOrchestrator:
             
             # End logging run
             completed_run = self.logger.end_run(success=success)
+            
+            # Send final status
+            self._update_status("complete", {
+                "success": success,
+                "project_name": requirements.project_name,
+                "total_iterations": len(iterations),
+                "total_duration": total_duration,
+                "final_code": final_code
+            })
             
             # Analyze the run and generate rules
             # await self._analyze_and_learn(completed_run)  # Disabled: rules now generated manually via CLI
@@ -238,6 +322,8 @@ class ProjectOrchestrator:
             
             # Analyze the failed run
             await self._analyze_and_learn(completed_run)
+            
+            self._update_status("error", {"message": str(e)})
             
             return ProjectResult(
                 success=False,

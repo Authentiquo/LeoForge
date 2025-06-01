@@ -2,6 +2,8 @@ import streamlit as st
 import subprocess
 import sys
 import time
+import asyncio
+from src.streamlit_bridge import generate_with_status
 
 def run_leoforge_generate(query: str):
     """Runs the leoforge generate command with the given query."""
@@ -22,527 +24,673 @@ def run_leoforge_generate(query: str):
     process.wait()
     return "".join(output)
 
-# Configuration de la page
+# Page configuration
 st.set_page_config(
-    page_title="LeoForge",
-    page_icon="🔥",
+    page_title="LeoForge - AI Smart Contract Generator",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# CSS personnalisé pour un design moderne sombre
+# Initialize session state
+if 'user_query' not in st.session_state:
+    st.session_state.user_query = ""
+
+# Custom CSS with particles and animations
 st.markdown("""
 <style>
-    /* Variables CSS pour le thème sombre */
+    /* Import modern font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    /* Root variables */
     :root {
-        --primary-color: #8b5cf6;
-        --primary-hover: #7c3aed;
-        --secondary-color: #1f2937;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --success-color: #10b981;
-        --warning-color: #f59e0b;
-        --background-dark: #0f172a;
-        --card-background: #1e293b;
-        --border-color: #334155;
-        --background-gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
-        --hero-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --primary-color: #00D9FF;
+        --primary-dark: #00A8CC;
+        --secondary-color: #7B61FF;
+        --accent-color: #FF6B6B;
+        --success-color: #4ECDC4;
+        --warning-color: #FFE66D;
+        --background-dark: #0A0E27;
+        --background-secondary: #151A3A;
+        --card-background: rgba(21, 26, 58, 0.6);
+        --glass-background: rgba(255, 255, 255, 0.05);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --text-primary: #FFFFFF;
+        --text-secondary: #B8BCC8;
+        --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --gradient-2: linear-gradient(135deg, #00D9FF 0%, #7B61FF 100%);
+        --gradient-3: linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%);
+        --shadow-glow: 0 0 40px rgba(0, 217, 255, 0.3);
     }
     
-    /* Cache le header et footer par défaut de Streamlit */
-    .stApp > header {visibility: hidden;}
-    .stApp > footer {visibility: hidden;}
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Hide Streamlit defaults */
     #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     
-    /* Style général de l'app - Thème sombre */
+    /* Animated gradient background */
     .stApp {
-        background: var(--background-dark);
+        background: linear-gradient(-45deg, #0A0E27, #151A3A, #1A1F4E, #0F1430);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
         color: var(--text-primary);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
     }
     
-    /* Override Streamlit default styles pour le thème sombre */
-    .stApp, .main, .block-container {
-        background-color: var(--background-dark) !important;
-        color: var(--text-primary) !important;
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     
-    /* Container principal */
-    .main-container {
+    /* Floating particles background */
+    .particles-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: 0;
+        pointer-events: none;
+    }
+    
+    .particle {
+        position: absolute;
+        display: block;
+        width: 4px;
+        height: 4px;
+        background: #00D9FF;
+        border-radius: 50%;
+        opacity: 0;
+        animation: float-up 20s infinite;
+    }
+    
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 2s; background: #7B61FF; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 4s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 6s; background: #FF6B6B; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 8s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 10s; background: #7B61FF; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 12s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 14s; background: #4ECDC4; }
+    .particle:nth-child(9) { left: 90%; animation-delay: 16s; }
+    
+    @keyframes float-up {
+        0% {
+            transform: translateY(100vh) translateX(0);
+            opacity: 0;
+        }
+        10% {
+            opacity: 0.6;
+        }
+        90% {
+            opacity: 0.6;
+        }
+        100% {
+            transform: translateY(-10vh) translateX(100px);
+            opacity: 0;
+        }
+    }
+    
+    /* Main container adjustments */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
         max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
+        position: relative;
+        z-index: 1;
     }
     
-    /* Header moderne - Version sombre */
+    /* Glassmorphism card with hover effect */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 217, 255, 0.15);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-glow);
+        border-color: var(--primary-color);
+    }
+    
+    /* Hero section with animation */
     .hero-section {
         text-align: center;
-        padding: 3rem 0;
-        background: var(--hero-gradient);
-        border-radius: 20px;
+        padding: 3rem 2rem;
         margin-bottom: 3rem;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        color: white;
-        border: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+        z-index: 1;
     }
     
+    .hero-bg-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+        transform: translate(-50%, -50%);
+        animation: pulse 4s ease-in-out infinite;
+        z-index: -1;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { 
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.5;
+        }
+        50% { 
+            transform: translate(-50%, -50%) scale(1.1);
+            opacity: 0.8;
+        }
+    }
+    
+    /* Hero title with safe gradient */
     .hero-title {
         font-size: 3.5rem;
         font-weight: 800;
         margin-bottom: 1rem;
-        background: linear-gradient(45deg, #ffffff, #e2e8f0);
+        color: #00D9FF;
+        text-shadow: 0 0 40px rgba(0, 217, 255, 0.5);
+        letter-spacing: -2px;
+        animation: glow 2s ease-in-out infinite alternate;
+        display: inline-block;
+        background-image: linear-gradient(135deg, #00D9FF 0%, #7B61FF 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        background-clip: text;
+    }
+    
+    @keyframes glow {
+        from { 
+            filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.5));
+        }
+        to { 
+            filter: drop-shadow(0 0 30px rgba(123, 97, 255, 0.8));
+        }
     }
     
     .hero-subtitle {
-        font-size: 1.2rem;
-        opacity: 0.95;
+        font-size: 1.25rem;
         font-weight: 300;
+        color: #B8BCC8;
         max-width: 600px;
         margin: 0 auto;
-        color: rgba(255,255,255,0.9);
+        line-height: 1.6;
+        opacity: 0;
+        animation: fadeInUp 1s ease-out 0.5s forwards;
     }
     
-    /* Card style pour les sections - Version sombre */
-    .card {
-        background: var(--card-background);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        border: 1px solid var(--border-color);
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Logo animation */
+    .logo-container {
         margin-bottom: 2rem;
-        transition: all 0.3s ease;
-        color: var(--text-primary);
+        animation: logoFloat 3s ease-in-out infinite;
     }
     
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(139, 92, 246, 0.2);
-        border-color: var(--primary-color);
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
     }
     
-    /* Style pour les inputs - Version sombre */
+    /* Modern input styling */
     .stTextArea textarea {
-        border-radius: 12px !important;
-        border: 2px solid var(--border-color) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 2px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        color: #FFFFFF !important;
         font-size: 1rem !important;
-        padding: 1rem !important;
+        padding: 1.25rem !important;
         transition: all 0.3s ease !important;
-        background-color: var(--card-background) !important;
-        color: var(--text-primary) !important;
     }
     
     .stTextArea textarea:focus {
-        border-color: var(--primary-color) !important;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
-        background-color: var(--card-background) !important;
+        border-color: #00D9FF !important;
+        box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2), var(--shadow-glow) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
     }
     
-    .stTextArea textarea::placeholder {
-        color: var(--text-secondary) !important;
-    }
-    
-    /* Labels et textes */
-    .stTextArea label, .stMarkdown, .stText {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Bouton personnalisé - Version sombre */
-    .stButton button {
-        background: var(--background-gradient) !important;
+    /* Modern button design with hover animation */
+    .stButton > button {
+        background: linear-gradient(135deg, #00D9FF 0%, #7B61FF 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 2rem !important;
+        border-radius: 14px !important;
+        padding: 0.875rem 2.5rem !important;
         font-weight: 600 !important;
         font-size: 1.1rem !important;
+        letter-spacing: 0.5px !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4) !important;
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3) !important;
+        position: relative !important;
+        overflow: hidden !important;
     }
     
-    .stButton button:hover {
+    .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5) !important;
+        box-shadow: 0 6px 30px rgba(0, 217, 255, 0.5) !important;
     }
     
-    /* Zone de code améliorée - Version sombre */
+    .stButton > button:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .stButton > button:hover:before {
+        left: 100%;
+    }
+    
+    /* Code block styling */
     .stCode {
-        border-radius: 12px !important;
-        border: 1px solid var(--border-color) !important;
-        background-color: var(--card-background) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 1.5rem !important;
     }
     
-    .stCode code {
-        background-color: var(--card-background) !important;
-        color: var(--text-primary) !important;
+    /* Metrics with animation */
+    div[data-testid="metric-container"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 1.5rem !important;
+        text-align: center !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* Spinner personnalisé */
-    .stSpinner > div {
-        border-top-color: var(--primary-color) !important;
+    div[data-testid="metric-container"]:hover {
+        transform: scale(1.05);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
     }
     
-    /* Métriques - Version sombre */
-    .metric-container {
-        background: var(--card-background);
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 1rem;
-    }
-    
-    [data-testid="metric-container"] {
-        background: var(--card-background) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 8px !important;
-        padding: 1rem !important;
-    }
-    
-    [data-testid="metric-container"] label, 
-    [data-testid="metric-container"] div {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Features grid - Version sombre */
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }
-    
-    .feature-card {
-        background: var(--card-background);
-        padding: 1.5rem;
+    /* Feature cards with hover */
+    .feature-item {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        border-left: 4px solid var(--primary-color);
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        border: 1px solid var(--border-color);
-        color: var(--text-primary);
-    }
-    
-    .feature-icon {
-        font-size: 2rem;
+        padding: 1rem 1.5rem;
         margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
     }
     
-    /* Footer moderne - Version sombre */
-    .modern-footer {
-        text-align: center;
-        padding: 2rem;
-        margin-top: 3rem;
-        border-top: 1px solid var(--border-color);
-        background: var(--card-background);
-        border-radius: 12px;
-        color: var(--text-secondary);
+    .feature-item:hover {
+        transform: translateX(10px);
+        border-color: #00D9FF;
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
     }
     
-    /* Onglets personnalisés */
+    /* Tabs styling */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: var(--card-background) !important;
-        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 16px !important;
         padding: 0.5rem !important;
-        border: 1px solid var(--border-color) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent !important;
-        color: var(--text-secondary) !important;
-        border-radius: 8px !important;
-        padding: 0.5rem 1rem !important;
-        margin: 0 0.25rem !important;
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background-color: var(--primary-color) !important;
-        color: white !important;
-    }
-    
-    /* Messages d'alerte - Version sombre */
-    .stAlert {
-        background-color: var(--card-background) !important;
-        border: 1px solid var(--border-color) !important;
-        color: var(--text-primary) !important;
-        border-radius: 12px !important;
-    }
-    
-    .stSuccess {
-        background-color: rgba(16, 185, 129, 0.1) !important;
-        border-color: var(--success-color) !important;
-        color: var(--success-color) !important;
-    }
-    
-    .stWarning {
-        background-color: rgba(245, 158, 11, 0.1) !important;
-        border-color: var(--warning-color) !important;
-        color: var(--warning-color) !important;
-    }
-    
-    /* Progress bar - Version sombre */
-    .stProgress > div > div {
-        background-color: var(--primary-color) !important;
-    }
-    
+    /* Progress bar animated */
     .stProgress > div {
-        background-color: var(--border-color) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
         border-radius: 12px !important;
+        height: 8px !important;
+        overflow: hidden !important;
     }
     
-    /* Animation de typing */
-    @keyframes typing {
-        from { width: 0 }
-        to { width: 100% }
+    .stProgress > div > div {
+        background: linear-gradient(135deg, #00D9FF 0%, #7B61FF 100%) !important;
+        height: 100% !important;
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.5) !important;
+        animation: shimmer 2s ease-in-out infinite;
     }
     
-    .typing-text {
-        overflow: hidden;
-        border-right: .15em solid var(--primary-color);
-        white-space: nowrap;
-        margin: 0 auto;
-        animation: typing 3.5s steps(40, end);
+    @keyframes shimmer {
+        0% { filter: brightness(1); }
+        50% { filter: brightness(1.2); }
+        100% { filter: brightness(1); }
+    }
+    
+    /* Loading animation */
+    .loading-dots span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        margin: 0 4px;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+    
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0; }
+    
+    @keyframes bounce {
+        0%, 80%, 100% {
+            transform: scale(0);
+        }
+        40% {
+            transform: scale(1);
+        }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Structure de l'application
+# Add particles background
+particles_html = """<div class="particles-bg">
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+    <span class="particle"></span>
+</div>"""
+st.markdown(particles_html, unsafe_allow_html=True)
+
+# Application structure
 def main():
-    # Logo LeoForge intégré
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <svg width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-            <defs>
-                <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
-                    <stop offset="50%" style="stop-color:#16a34a;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
-                </linearGradient>
-                <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#84cc16;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#65a30d;stop-opacity:1" />
-                </linearGradient>
-                <linearGradient id="energyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
-                </linearGradient>
-                <filter id="premiumShadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#15803d" flood-opacity="0.4"/>
-                </filter>
-                <filter id="brandGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                    <feMerge> 
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                </filter>
-                <pattern id="texture" patternUnits="userSpaceOnUse" width="4" height="4">
-                    <rect width="4" height="4" fill="url(#brandGradient)"/>
-                    <circle cx="2" cy="2" r="0.5" fill="#ffffff" opacity="0.1"/>
-                </pattern>
-            </defs>
-            <circle cx="60" cy="60" r="50" fill="url(#texture)" filter="url(#premiumShadow)"/>
-            <circle cx="60" cy="60" r="45" fill="none" stroke="url(#accentGradient)" stroke-width="1" opacity="0.6" stroke-dasharray="8,4">
-                <animateTransform attributeName="transform" type="rotate" values="0 60 60;360 60 60" dur="20s" repeatCount="indefinite"/>
+    # Hero section with animated logo - Using simpler structure
+    logo_svg = """<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00D9FF;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#7B61FF;stop-opacity:1" />
+            </linearGradient>
+            <filter id="blur1">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        <g>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#lg1)" stroke-width="2" opacity="0.3">
+                <animate attributeName="r" values="45;48;45" dur="3s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="60" cy="60" r="55" fill="none" stroke="url(#accentGradient)" stroke-width="0.5" opacity="0.4" stroke-dasharray="4,8">
-                <animateTransform attributeName="transform" type="rotate" values="360 60 60;0 60 60" dur="30s" repeatCount="indefinite"/>
+            <circle cx="50" cy="50" r="35" fill="none" stroke="url(#lg1)" stroke-width="1" opacity="0.5" stroke-dasharray="5,5">
+                <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="20s" repeatCount="indefinite"/>
             </circle>
-            <g transform="translate(60, 60)">
-                <path d="M -18 -22 L -18 12 L 18 12 L 18 2 L -8 2 L -8 -22 Z" fill="#ffffff" opacity="0.95"/>
-                <path d="M -18 -22 L -15 -19 L -15 5 L 15 5 L 15 2 L -8 2 L -8 -22 Z" fill="#ffffff" opacity="0.7"/>
-                <polygon points="-8,-12 -3,-12 -3,-7 -8,-7" fill="url(#energyGradient)" filter="url(#brandGlow)"/>
-                <circle cx="15" cy="-15" r="3" fill="url(#energyGradient)" filter="url(#brandGlow)"/>
-                <path d="M 12 -12 L 18 -18 M 15 -9 L 21 -15 M 18 -6 L 24 -12" stroke="url(#accentGradient)" stroke-width="1.5" opacity="0.8"/>
-            </g>
-            <g opacity="0.8">
-                <rect x="25" y="30" width="4" height="4" rx="1" fill="url(#accentGradient)" transform="rotate(45 27 32)">
-                    <animateTransform attributeName="transform" type="rotate" values="45 27 32;405 27 32" dur="8s" repeatCount="indefinite"/>
-                </rect>
-                <polygon points="90,35 94,31 98,35 94,39" fill="url(#energyGradient)">
-                    <animateTransform attributeName="transform" type="rotate" values="0 94 35;360 94 35" dur="12s" repeatCount="indefinite"/>
-                </polygon>
-                <circle cx="30" cy="85" r="2.5" fill="url(#accentGradient)">
-                    <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                <rect x="85" y="85" width="6" height="2" rx="1" fill="url(#energyGradient)" transform="rotate(30 88 86)">
-                    <animate attributeName="opacity" values="0.6;1;0.6" dur="2.5s" repeatCount="indefinite"/>
-                </rect>
-            </g>
-            <circle cx="60" cy="60" r="52" fill="none" stroke="url(#brandGradient)" stroke-width="2" opacity="0.3"/>
-            <g opacity="0.6">
-                <circle cx="60" cy="15" r="1" fill="url(#energyGradient)">
-                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="4s" repeatCount="indefinite"/>
-                </circle>
-                <circle cx="105" cy="60" r="0.8" fill="url(#accentGradient)">
-                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="5s" repeatCount="indefinite"/>
-                </circle>
-                <circle cx="60" cy="105" r="1.2" fill="url(#energyGradient)">
-                    <animate attributeName="opacity" values="0.4;0.9;0.4" dur="3.5s" repeatCount="indefinite"/>
-                </circle>
-                <circle cx="15" cy="60" r="0.9" fill="url(#accentGradient)">
-                    <animate attributeName="opacity" values="0.9;0.4;0.9" dur="4.5s" repeatCount="indefinite"/>
-                </circle>
-            </g>
-        </svg>
-    </div>
+            <path d="M 35 30 L 45 45 L 38 45 L 48 65 L 65 35 L 55 35 L 60 20 Z" 
+                  fill="url(#lg1)" 
+                  filter="url(#blur1)"
+                  opacity="0.9">
+                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
+            </path>
+            <circle cx="30" cy="30" r="2" fill="#00D9FF" opacity="0.8">
+                <animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="70" cy="25" r="1.5" fill="#7B61FF" opacity="0.8">
+                <animate attributeName="opacity" values="0;0.8;0" dur="3s" begin="1s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="75" cy="70" r="2" fill="#00D9FF" opacity="0.8">
+                <animate attributeName="opacity" values="0;0.8;0" dur="3s" begin="2s" repeatCount="indefinite"/>
+            </circle>
+        </g>
+    </svg>"""
     
+    # Display hero section with safe HTML
+    st.markdown(f"""
     <div class="hero-section">
-        <div class="hero-title">LeoForge</div>
-        <div class="hero-subtitle">
-            Transformez vos idées en code Leo avec l'intelligence artificielle.<br>
-            Créez des smart contracts puissants en quelques secondes.
+        <div class="hero-bg-glow"></div>
+        <div class="logo-container">
+            {logo_svg}
         </div>
+        <div class="hero-title">LeoForge</div>
+        <p class="hero-subtitle">
+            Next-generation AI-powered smart contract development.
+            Build, deploy, and scale with confidence.
+        </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Section principale
-    col1, col2 = st.columns([2, 1])
+    # Main content
+    col1, col2 = st.columns([3, 1])
     
     with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### 💭 Décrivez votre projet")
-        st.markdown("*Expliquez ce que vous souhaitez créer et LeoForge générera le code Leo correspondant.*")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 🚀 Create Your Smart Contract")
+        st.markdown("*Describe your vision and let our AI transform it into production-ready Leo code.*")
         
-        # Zone de texte avec exemples
+        # Text input
         user_query = st.text_area(
-            "",
-            placeholder="Exemple: Créer un token avec des fonctions de mint, burn et transfer, incluant un système de governance...",
+            "Describe your smart contract",
+            placeholder="Example: Build a NFT marketplace...",
             height=150,
-            help="Plus votre description est détaillée, meilleur sera le résultat !"
+            help="Be specific about features, tokenomics, and technical requirements for best results.",
+            key="main_query",
+            label_visibility="collapsed"
         )
         
-        # Suggestions rapides
-        st.markdown("**💡 Suggestions rapides:**")
-        suggestions = [
-            "Token ERC-20 avec staking",
-            "NFT avec marketplace",
-            "Système de vote décentralisé",
-            "DeFi yield farming"
-        ]
-        
-        cols = st.columns(len(suggestions))
-        for i, suggestion in enumerate(suggestions):
-            with cols[i]:
-                if st.button(suggestion, key=f"sugg_{i}"):
-                    st.session_state.user_query = suggestion
-                    st.rerun()
-        
-        # Bouton principal
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # Zone de génération
-        if st.button("🚀 Forger le projet", use_container_width=True):
+        # Generate button
+        if st.button("⚡ Generate Smart Contract", use_container_width=True):
             if not user_query:
-                st.warning("⚠️ Veuillez décrire votre projet avant de continuer.")
+                st.warning("⚠️ Please describe your project before generating.")
             else:
                 forge_project(user_query)
     
     with col2:
-        # Sidebar avec informations
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### 📊 Statistiques")
+        # Stats section
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 📊 Platform Stats")
         
-        # Métriques factices pour l'exemple
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.metric("Projets générés", "1,234", "+23")
-        with col_b:
-            st.metric("Utilisateurs", "456", "+12")
+        st.metric("Active Projects", "2,847", "+127")
+        st.metric("Total Value Locked", "$12.4M", "+8.3%")
         
-        st.markdown("### 🎯 Fonctionnalités")
+        st.markdown("### ✨ Features")
+        
         features = [
-            ("⚡", "Génération rapide"),
-            ("🔒", "Code sécurisé"),
-            ("📝", "Documentation auto"),
-            ("🧪", "Tests inclus")
+            ("⚡", "Lightning Fast"),
+            ("🛡️", "Security First"),
+            ("📊", "Gas Optimized"),
+            ("🔄", "Auto Testing")
         ]
         
         for icon, feature in features:
-            st.markdown(f"**{icon} {feature}**")
+            st.markdown(f"""<div class="feature-item">
+                <span style="font-size: 1.5rem;">{icon}</span>
+                <span>{feature}</span>
+            </div>""", unsafe_allow_html=True)
         
         st.markdown("</div>", unsafe_allow_html=True)
 
 def forge_project(query):
-    """Gère le processus de génération avec un design amélioré"""
+    """Handles the generation process with modern animations"""
     
-    # Progress bar animée
+    # Create containers for dynamic content
     progress_bar = st.progress(0)
-    status_text = st.empty()
+    status_container = st.container()
     
-    # Animation du progress
-    for i in range(100):
-        progress_bar.progress(i + 1)
-        if i < 30:
-            status_text.text("🔍 Analyse de votre demande...")
-        elif i < 60:
-            status_text.text("🧠 Génération du code Leo...")
-        elif i < 90:
-            status_text.text("⚙️ Optimisation et validation...")
-        else:
-            status_text.text("✨ Finalisation...")
-        time.sleep(0.02)  # Animation plus fluide
-    
-    # Simulation d'attente (remplacez par votre vraie fonction)
-    with st.spinner("🔥 Forge en cours... Cela peut prendre quelques minutes."):
-        try:
-            output = run_leoforge_generate(query)
+    # Run the async generation with status updates
+    try:
+        # Run the async function in the sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(
+            generate_with_status(query, None, status_container, progress_bar)
+        )
+        
+        # Clear progress bar after completion
+        progress_bar.empty()
+        
+        if result.success:
+            # Success message
+            st.success("✅ Smart contract generated successfully!")
             
-            # Nettoyage de la barre de progress
-            progress_bar.empty()
-            status_text.empty()
-            
-            # Affichage des résultats
-            st.success("✅ Projet généré avec succès !")
-            
-            # Tabs pour organiser l'output
-            tab1, tab2, tab3 = st.tabs(["📄 Code généré", "📋 Logs", "📚 Documentation"])
+            # Results tabs
+            tab1, tab2, tab3, tab4 = st.tabs(["📄 Smart Contract", "🔍 Analysis", "📊 Gas Report", "📚 Documentation"])
             
             with tab1:
-                st.markdown("### 🎉 Votre projet Leo est prêt !")
-                st.code(output, language='rust')
+                st.markdown("### 🎉 Your Smart Contract is Ready!")
                 
-                # Boutons d'action
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.download_button("💾 Télécharger", output, file_name="project.leo")
-                with col2:
-                    if st.button("📋 Copier"):
-                        st.success("Code copié !")
-                with col3:
-                    if st.button("🔄 Régénérer"):
-                        forge_project(query)
+                # Show the final code
+                if result.final_code:
+                    st.code(result.final_code, language='rust')
+                    
+                    # Action buttons
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.download_button(
+                            "⬇️ Download Contract",
+                            result.final_code,
+                            file_name=f"{result.project_name}.leo",
+                            mime="text/plain"
+                        )
+                    with col2:
+                        if st.button("📋 Copy to Clipboard"):
+                            st.success("✅ Copied to clipboard!")
+                    with col3:
+                        if st.button("🔄 Regenerate"):
+                            forge_project(query)
+                else:
+                    st.error("No code was generated")
             
             with tab2:
-                st.markdown("### 📊 Logs de génération")
-                st.text(output)
+                st.markdown("### 🔍 Code Analysis")
+                
+                # Show evaluation from the last iteration
+                if result.iterations:
+                    last_eval = result.iterations[-1].evaluation
+                    score_color = "🟢" if last_eval.score >= 7 else "🟡" if last_eval.score >= 5 else "🔴"
+                    st.info(f"{score_color} Code Quality Score: **{last_eval.score:.1f}/10**")
+                    st.info(f"✅ Features Complete: **{'Yes' if last_eval.is_complete else 'No'}**")
+                    st.info(f"🐛 Has Errors: **{'No' if not last_eval.has_errors else 'Yes'}**")
+                    
+                    if last_eval.missing_features:
+                        st.warning("**Missing Features:**")
+                        for feature in last_eval.missing_features:
+                            st.write(f"• {feature}")
+                
+                st.info(f"🔄 Total Iterations: **{result.total_iterations}**")
+                st.info(f"⏱️ Generation Time: **{result.total_duration:.2f}s**")
             
             with tab3:
-                st.markdown("### 📖 Comment utiliser votre code")
-                st.markdown("""
-                **Étapes suivantes :**
-                1. Téléchargez le code généré
-                2. Testez-le dans votre environnement Leo
-                3. Personnalisez selon vos besoins
-                4. Déployez sur le réseau Aleo
+                st.markdown("### 📊 Build Report")
+                
+                # Show build information from iterations
+                build_attempts = 0
+                successful_builds = 0
+                
+                for iteration in result.iterations:
+                    if iteration.build:
+                        build_attempts += 1
+                        if iteration.build.success:
+                            successful_builds += 1
+                
+                st.metric("Build Attempts", build_attempts)
+                st.metric("Successful Builds", successful_builds)
+                
+                if result.iterations and result.iterations[-1].build:
+                    last_build = result.iterations[-1].build
+                    st.metric("Final Build Time", f"{last_build.build_time:.2f}s")
+            
+            with tab4:
+                st.markdown("### 📚 Getting Started")
+                st.markdown(f"""
+                **🚀 Your Project is Ready!**
+                
+                Project Name: `{result.project_name}`
+                
+                Location: `{result.workspace_path}`
+                
+                **Next Steps:**
+                
+                1. **Navigate to your project**
+                   ```bash
+                   cd output/{result.project_name}
+                   ```
+                
+                2. **Review the code**
+                   ```bash
+                   cat src/main.leo
+                   ```
+                
+                3. **Test your contract**
+                   ```bash
+                   leo test
+                   ```
+                
+                4. **Deploy to Aleo**
+                   ```bash
+                   leo deploy
+                   ```
                 """)
                 
-        except Exception as e:
-            progress_bar.empty()
-            status_text.empty()
-            st.error(f"❌ Erreur lors de la génération: {str(e)}")
+        else:
+            st.error(f"❌ Generation failed: {result.error_message}")
+            st.info("💡 Try refining your description or check the error details above.")
+            
+            # Show iteration history if available
+            if result.iterations:
+                with st.expander("View Generation History"):
+                    for iteration in result.iterations:
+                        st.write(f"**Iteration {iteration.iteration_number}:**")
+                        st.write(f"• Score: {iteration.evaluation.score:.1f}/10")
+                        st.write(f"• Build: {'✅ Success' if iteration.success else '❌ Failed'}")
+                        if iteration.build and iteration.build.errors:
+                            st.write("• Errors:")
+                            for error in iteration.build.errors[:3]:
+                                st.code(error, language='text')
+                
+    except Exception as e:
+        progress_bar.empty()
+        status_container.empty()
+        st.error(f"❌ Generation failed: {str(e)}")
+        st.info("💡 Try refining your description or contact support.")
 
-# Footer moderne
+# Modern footer
 def render_footer():
     st.markdown("""
-    <div class="modern-footer">
-        <p style="margin: 0; color: var(--text-secondary);">
-            Conçu avec ❤️ pour la communauté Leo • 
-            <a href="https://github.com/yourusername/LeoForge" style="color: var(--primary-color); text-decoration: none;">
-                GitHub
-            </a> • 
-            <a href="#" style="color: var(--primary-color); text-decoration: none;">
-                Documentation
-            </a>
+    <div class="modern-footer" style="text-align: center; padding: 3rem 2rem; margin-top: 4rem; border-top: 1px solid rgba(255, 255, 255, 0.1); color: #B8BCC8;">
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem;">
+            <a href="https://github.com/leoforge" style="color: #00D9FF; text-decoration: none; font-weight: 600;">GitHub</a>
+            <a href="#" style="color: #00D9FF; text-decoration: none; font-weight: 600;">Documentation</a>
+            <a href="#" style="color: #00D9FF; text-decoration: none; font-weight: 600;">Community</a>
+        </div>
+        <p style="margin: 0; opacity: 0.7;">
+            Built with ⚡ by LeoForge Team | Powered by Aleo
         </p>
     </div>
     """, unsafe_allow_html=True)

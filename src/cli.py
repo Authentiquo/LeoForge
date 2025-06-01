@@ -33,17 +33,21 @@ console = Console()
 
 def display_banner():
     """Display the LeoForge banner"""
-    banner = """
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║                        🔥 LeoForge 🔥                        ║
-    ║                                                               ║
-    ║           AI-Powered Leo Smart Contract Generator             ║
-    ║                    For Aleo Blockchain                        ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
-    """
-    console.print(banner, style="bold cyan")
+    banner_text = Text()
+    banner_text.append("🔥 LeoForge 🔥", style="bold yellow")
+    banner_text.append("\n\n")
+    banner_text.append("AI-Powered Leo Smart Contract Generator", style="bold white")
+    banner_text.append("\n")
+    banner_text.append("For Aleo Blockchain", style="bold white")
+    banner_text.justify = "center"
+    
+    panel = Panel(
+        banner_text,
+        border_style="cyan",
+        padding=(1, 2),
+        expand=True
+    )
+    console.print(panel)
 
 
 def display_project_types():

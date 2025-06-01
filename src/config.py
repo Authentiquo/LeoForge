@@ -37,17 +37,17 @@ class LeoForgeConfig(BaseModel):
     
     # Model configurations
     default_architect_model: str = Field(
-        default="claude-3-7-sonnet-20250219",
+        default="claude-sonnet-4-20250514",
         description="Default model for the Architect agent"
     )
     
     default_generator_model: str = Field(
-        default="claude-3-7-sonnet-20250219",
+        default="claude-sonnet-4-20250514",
         description="Default model for the Code Generator agent"
     )
     
     default_evaluator_model: str = Field(
-        default="claude-3-7-sonnet-20250219",
+        default="claude-sonnet-4-20250514",
         description="Default model for the Code Evaluator agent"
     )
     

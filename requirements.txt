@@ -16,6 +16,3 @@ black>=23.0.0
 flake8>=6.0.0
 mypy>=1.0.0
 
-# Optional dependencies for different AI providers
-anthropic>=0.8.0
-openai>=1.0.0
