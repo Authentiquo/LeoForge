@@ -217,78 +217,93 @@ Then open your browser to `http://localhost:8501`
 
 ```mermaid
 graph TB
-    %% Styles pour les sous-graphes
-    classDef ui fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1,font-size:16px;
-    classDef core fill:#fff3e0,stroke:#ff9800,stroke-width:2px,color:#e65100,font-size:16px;
-    classDef agent fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20,font-size:16px;
-    classDef services fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c,font-size:16px;
-    classDef storage fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#b71c1c,font-size:16px;
+    %% Styles pour les sous-graphes avec des couleurs plus vives
+    classDef ui fill:#e1f5fe,stroke:#0288d1,stroke-width:3px,color:#01579b,font-size:14px,font-weight:bold;
+    classDef core fill:#fff8e1,stroke:#ff8f00,stroke-width:3px,color:#e65100,font-size:14px,font-weight:bold;
+    classDef agent fill:#e8f5e9,stroke:#4caf50,stroke-width:3px,color:#1b5e20,font-size:14px,font-weight:bold;
+    classDef services fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px,color:#4a148c,font-size:14px,font-weight:bold;
+    classDef storage fill:#ffebee,stroke:#f44336,stroke-width:3px,color:#b71c1c,font-size:14px,font-weight:bold;
+    
+    %% Styles pour les nœuds avec des couleurs de fond gradient
+    classDef uiNode fill:linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%),stroke:#1976d2,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef coreNode fill:linear-gradient(135deg, #ffb74d 0%, #ffa726 100%),stroke:#f57c00,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef agentNode fill:linear-gradient(135deg, #81c784 0%, #66bb6a 100%),stroke:#388e3c,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef serviceNode fill:linear-gradient(135deg, #ba68c8 0%, #ab47bc 100%),stroke:#7b1fa2,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef storageNode fill:linear-gradient(135deg, #ef5350 0%, #e53935 100%),stroke:#c62828,stroke-width:2px,color:#fff,font-weight:bold;
 
-    %% Styles pour les nœuds individuels
-    classDef node fill:#fff,stroke:#333,stroke-width:2px,color:#222,font-weight:bold,font-size:15px;
-
-    subgraph "User Interface"
-        A[Web UI<br/>Streamlit]
-        B[CLI<br/>Rich Console]
+    subgraph UI["🖥️ Interface Utilisateur"]
+        A["💻 Web UI<br/>Streamlit Dashboard"]
+        B["⌨️ CLI<br/>Rich Console Interface"]
     end
-    class A,B ui,node;
+    class UI ui;
+    class A,B uiNode;
 
-    subgraph "Core Orchestration"
-        C[Project Orchestrator<br/>Workflow Management]
+    subgraph CORE["🎯 Orchestration Centrale"]
+        C["🎼 Project Orchestrator<br/>Gestionnaire de Workflow"]
     end
-    class C core,node;
+    class CORE core;
+    class C coreNode;
 
-    subgraph "AI Agent Layer"
-        D[Architect Agent<br/>Architecture Design]
-        E[Code Generator<br/>Leo Code Generation]
-        F[Code Evaluator<br/>Quality Assessment]
-        G[Rule Engineer<br/>Learning & Rules]
+    subgraph AGENTS["🤖 Couche d'Agents IA"]
+        D["🏗️ Architect Agent<br/>Conception Architecture"]
+        E["⚡ Code Generator<br/>Génération Leo Code"]
+        F["🔍 Code Evaluator<br/>Évaluation Qualité"]
+        G["📚 Rule Engineer<br/>Apprentissage & Règles"]
     end
-    class D,E,F,G agent,node;
+    class AGENTS agent;
+    class D,E,F,G agentNode;
 
-    subgraph "Services Layer"
-        H[Leo Builder<br/>Compilation Service]
-        I[Workspace Manager<br/>Project Management]
-        J[Logger Service<br/>Error Tracking]
-        K[Rule Manager<br/>Knowledge Base]
+    subgraph SERVICES["⚙️ Couche de Services"]
+        H["🔨 Leo Builder<br/>Service de Compilation"]
+        I["📁 Workspace Manager<br/>Gestion de Projets"]
+        J["📊 Logger Service<br/>Suivi des Erreurs"]
+        K["🧠 Rule Manager<br/>Base de Connaissances"]
     end
-    class H,I,J,K services,node;
+    class SERVICES services;
+    class H,I,J,K serviceNode;
 
-    subgraph "Storage & Output"
-        L[Generated Code<br/>Leo Smart Contracts]
-        M[Project Logs<br/>Error Analysis]
-        N[Improvement Rules<br/>Learning Database]
-        O[Compiled Output<br/>Deployable Contracts]
+    subgraph STORAGE["💾 Stockage & Sortie"]
+        L["📄 Generated Code<br/>Smart Contracts Leo"]
+        M["📈 Project Logs<br/>Analyse des Erreurs"]
+        N["📖 Improvement Rules<br/>Base d'Apprentissage"]
+        O["🚀 Compiled Output<br/>Contrats Déployables"]
     end
-    class L,M,N,O storage,node;
+    class STORAGE storage;
+    class L,M,N,O storageNode;
 
-    %% User Interface Flow
-    A --> C
-    B --> C
+    %% Flux de l'interface utilisateur avec des flèches colorées
+    A ==>|"Interface Web"| C
+    B ==>|"Ligne de commande"| C
 
-    %% Core Agent Workflow
-    C --> D
-    D --> E
-    E --> F
-    F --> G
+    %% Workflow principal des agents
+    C ==>|"Initialisation"| D
+    D ==>|"Architecture définie"| E
+    E ==>|"Code généré"| F
+    F ==>|"Évaluation"| G
 
-    %% Service Integration
-    C --> H
-    C --> I
-    C --> J
-    G --> K
+    %% Intégration des services
+    C -.->|"Build Request"| H
+    C -.->|"Project Setup"| I
+    C -.->|"Log Events"| J
+    G -.->|"Update Rules"| K
 
-    %% Feedback Loops
-    F -->|Needs Improvement| E
-    H -->|Build Errors| E
-    G -->|New Rules| D
-    G -->|New Rules| E
+    %% Boucles de rétroaction avec des styles différents
+    F -->|"❌ Amélioration requise"| E
+    H -->|"🔥 Erreurs de build"| E
+    G -->|"✨ Nouvelles règles"| D
+    G -->|"🎯 Optimisations"| E
 
-    %% Output Generation
-    E --> L
-    J --> M
-    G --> N
-    H --> O
+    %% Génération des sorties
+    E ==>|"💾 Sauvegarde"| L
+    J ==>|"📝 Journalisation"| M
+    G ==>|"🧠 Apprentissage"| N
+    H ==>|"🎯 Compilation"| O
+
+    %% Flux de données supplémentaires
+    K -.->|"📚 Règles appliquées"| D
+    K -.->|"🎯 Patterns"| E
+    I -.->|"📁 Structure projet"| E
+    M -.->|"📈 Analytics"| G
 ```
 
 ### Agent Responsibilities
